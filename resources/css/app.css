@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '@fortawesome/fontawesome-free/css/all.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -8,4 +9,26 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@source inline("{hover:,active:,focus:,}bg-{purple,orange,blue,rose,yellow,cyan,lime}-{100..400..100}");
+@source inline("{hover:,active:,focus:,}dark:bg-{purple,orange,blue,rose,yellow,cyan,lime}-{600..900..100}");
+@source inline("{dark:,}text-{purple,orange,blue,rose,yellow,cyan,lime}-{50,500,950}");
+
+@layer utilities {
+    body {
+        @apply font-sans bg-gray-200 text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-200;
+    }
+
+    h1 {
+        @apply text-2xl sm:text-4xl font-bold;
+    }
+
+    h2 {
+        @apply text-xl sm:text-2xl font-semibold;
+    }
+
+    button, a {
+        @apply cursor-pointer;
+    }
 }
