@@ -61,4 +61,31 @@ class DateHelpers
 
         return $dateToCheck->isSameDay($plantSaleDay);
     }
+
+    public static function nextWristbandDistributionStart(DateTimeInterface $date, int $daysAhead = 7): ?Carbon
+    {
+        $reference = Carbon::instance($date);
+
+        for ($offset = 0; $offset <= $daysAhead; $offset++) {
+            $candidateDate = $reference->copy()->addDays($offset);
+
+            if (! self::isPlantSaleOpenOnDate($candidateDate)) {
+                continue;
+            }
+
+            $hours = config('ps.hours.'.$candidateDate->format('l'));
+
+            if (! is_array($hours) || ! isset($hours['wristbands'])) {
+                continue;
+            }
+
+            $wristbandStart = $candidateDate->copy()->setTimeFromTimeString($hours['wristbands']);
+
+            if ($wristbandStart->greaterThan($reference)) {
+                return $wristbandStart;
+            }
+        }
+
+        return null;
+    }
 }

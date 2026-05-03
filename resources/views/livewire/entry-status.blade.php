@@ -1,5 +1,7 @@
 <?php
 
+use App\Helpers\DateHelpers;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -33,15 +35,15 @@ new #[Title('Entry Status')] class extends Component
     #[Computed]
     public function color(): string
     {
-        $colors = config('ps.entry_status_colors', []);
+        $colors = config('ps.colors', []);
 
-        return $colors[now()->dayOfWeek] ?? $colors['default'] ?? 'purple';
+        return $colors[now()->dayName] ?? 'purple';
     }
 
     #[Computed]
     public function firstGroup(): int
     {
-        $zeroGroupDays = config('ps.entry_zero_group_days', [4]);
+        $zeroGroupDays = config('ps.group_zero', []);
 
         return in_array(now()->dayOfWeek, $zeroGroupDays) ? 0 : 1;
     }
@@ -70,6 +72,83 @@ new #[Title('Entry Status')] class extends Component
             $this->newtMinutes <= 255 => 'about 4 hours',
             default => 'over 4 hours',
         };
+    }
+
+    #[Computed]
+    public function nextOpeningCountdown(): ?array
+    {
+        if ($this->saleStatus() !== 'closed') {
+            return null;
+        }
+
+        $currentTime = now();
+
+        $nextWristbandStart = null;
+
+        if (DateHelpers::isPlantSaleOpenOnDate($currentTime)) {
+            $todayHours = config('ps.hours.'.$currentTime->dayName);
+
+            if (is_array($todayHours) && isset($todayHours['wristbands'])) {
+                $todayWristbandStart = $currentTime->copy()->setTimeFromTimeString($todayHours['wristbands']);
+
+                if ($currentTime->lessThanOrEqualTo($todayWristbandStart->copy()->addMinutes(15))) {
+                    $nextWristbandStart = $todayWristbandStart;
+                }
+            }
+        }
+
+        if ($nextWristbandStart === null) {
+            $nextWristbandStart = DateHelpers::nextWristbandDistributionStart($currentTime, 7);
+        }
+
+        if ($nextWristbandStart === null) {
+            return null;
+        }
+
+        $hours = config('ps.hours.'.$nextWristbandStart->dayName);
+
+        if (! is_array($hours) || ! isset($hours['wristbands'], $hours['open'])) {
+            return null;
+        }
+
+        $showStartingSoon = $currentTime->betweenIncluded(
+            $nextWristbandStart->copy()->subMinutes(10),
+            $nextWristbandStart->copy()->addMinutes(15),
+        );
+
+        $nextPublicSale = null;
+
+        if (DateHelpers::isPlantSaleOpenOnDate($currentTime) && $nextWristbandStart->isThursday()) {
+            $nextPublicWristbandStart = DateHelpers::nextWristbandDistributionStart(
+                $nextWristbandStart->copy()->addDay()->startOfDay(),
+                7,
+            );
+
+            if ($nextPublicWristbandStart !== null) {
+                $nextPublicHours = config('ps.hours.'.$nextPublicWristbandStart->dayName);
+
+                if (is_array($nextPublicHours) && isset($nextPublicHours['wristbands'], $nextPublicHours['open'])) {
+                    $nextPublicSale = [
+                        'day' => $nextPublicWristbandStart->format('l'),
+                        'date' => $nextPublicWristbandStart->format('F j'),
+                        'wristbands' => Carbon::createFromFormat('H:i', $nextPublicHours['wristbands'], $nextPublicWristbandStart->timezone)->format('g:i A'),
+                        'open' => Carbon::createFromFormat('H:i', $nextPublicHours['open'], $nextPublicWristbandStart->timezone)->format('g:i A'),
+                    ];
+                }
+            }
+        }
+
+        return [
+            'target' => $nextWristbandStart->toIso8601String(),
+            'day' => $nextWristbandStart->format('l'),
+            'date' => $nextWristbandStart->format('F j'),
+            'is_today' => DateHelpers::isPlantSaleOpenOnDate($currentTime),
+            'is_thursday' => $nextWristbandStart->isThursday(),
+            'show_starting_soon' => $showStartingSoon,
+            'wristbands' => Carbon::createFromFormat('H:i', $hours['wristbands'], $nextWristbandStart->timezone)->format('g:i A'),
+            'open' => Carbon::createFromFormat('H:i', $hours['open'], $nextWristbandStart->timezone)->format('g:i A'),
+            'next_public_sale' => $nextPublicSale,
+        ];
     }
 
     #[Computed]
@@ -104,9 +183,103 @@ new #[Title('Entry Status')] class extends Component
 <div wire:poll.5s="loadStatus">
     @switch($this->saleStatus())
         @case('closed')
+            @php($nextOpening = $this->nextOpeningCountdown())
             <div class="bg-gray-600 text-yellow-200 rounded-xl p-6 flex flex-col items-center text-2xl text-center">
                 <span class="fas fa-ban text-6xl my-2"></span>
                 <span>The sale is currently closed</span>
+
+                @if ($nextOpening !== null)
+                    <div
+                        class="mt-4 w-full max-w-2xl rounded-xl bg-gray-800/40 p-4 text-left text-base text-yellow-50"
+                        x-data="{
+                            targetMs: Date.parse('{{ $nextOpening['target'] }}'),
+                            remainingSeconds: 0,
+                            intervalId: null,
+                            init() {
+                                this.tick();
+                                this.intervalId = setInterval(() => this.tick(), 1000);
+                            },
+                            destroy() {
+                                if (this.intervalId !== null) {
+                                    clearInterval(this.intervalId);
+                                }
+                            },
+                            tick() {
+                                this.remainingSeconds = Math.max(0, Math.floor((this.targetMs - Date.now()) / 1000));
+                            },
+                            days() {
+                                return Math.floor(this.remainingSeconds / 86400);
+                            },
+                            hours() {
+                                return Math.floor((this.remainingSeconds % 86400) / 3600);
+                            },
+                            minutes() {
+                                return Math.floor((this.remainingSeconds % 3600) / 60);
+                            },
+                            seconds() {
+                                return this.remainingSeconds % 60;
+                            },
+                            format(value) {
+                                return String(value);
+                            },
+                            unitLabel(value, singular) {
+                                return value === 1 ? singular : `${singular}s`;
+                            },
+                        }"
+                    >
+                        <p class="text-lg font-semibold">
+                            @if ($nextOpening['is_today'])
+                                We'll see you real soon!
+                            @else
+                                Next sale day: {{ $nextOpening['day'] }}, {{ $nextOpening['date'] }}@if ($nextOpening['is_thursday']) <span class="font-medium">(volunteer pre-sale)</span>@endif
+                            @endif
+                        </p>
+                        @if ($nextOpening['is_today'] && $nextOpening['is_thursday'] && $nextOpening['next_public_sale'] !== null)
+                            <p class="mt-1">Wristband distribution for the volunteer pre-sale begins at {{ $nextOpening['wristbands'] }} and the sale opens at {{ $nextOpening['open'] }}.</p>
+                            <p class="mt-1">The next public sale day is {{ $nextOpening['next_public_sale']['day'] }}, {{ $nextOpening['next_public_sale']['date'] }}. Wristband distribution begins at {{ $nextOpening['next_public_sale']['wristbands'] }} and the sale opens at {{ $nextOpening['next_public_sale']['open'] }}.</p>
+                        @else
+                            <p class="mt-1">Wristband distribution begins at {{ $nextOpening['wristbands'] }} and the sale opens at {{ $nextOpening['open'] }}.</p>
+                        @endif
+                        @if ($nextOpening['show_starting_soon'])
+                            <p class="mt-4 text-center text-xl font-semibold">Wristband distribution beginning shortly...</p>
+                        @else
+                            <div class="mt-4 flex flex-col gap-2 sm:grid sm:grid-cols-4 sm:text-center">
+                                <div class="flex items-baseline justify-between rounded-lg bg-gray-900/40 p-3 sm:block">
+                                    <p class="text-3xl font-black" x-text="days()"></p>
+                                    <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
+                                        <span class="sm:hidden">days</span>
+                                        <span class="hidden sm:inline md:hidden">days</span>
+                                        <span class="hidden md:inline" x-text="unitLabel(days(), 'day')"></span>
+                                    </p>
+                                </div>
+                                <div class="flex items-baseline justify-between rounded-lg bg-gray-900/40 p-3 sm:block">
+                                    <p class="text-3xl font-black" x-text="format(hours())"></p>
+                                    <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
+                                        <span class="sm:hidden">hours</span>
+                                        <span class="hidden sm:inline md:hidden">hrs</span>
+                                        <span class="hidden md:inline" x-text="unitLabel(hours(), 'hour')"></span>
+                                    </p>
+                                </div>
+                                <div class="flex items-baseline justify-between rounded-lg bg-gray-900/40 p-3 sm:block">
+                                    <p class="text-3xl font-black" x-text="format(minutes())"></p>
+                                    <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
+                                        <span class="sm:hidden">minutes</span>
+                                        <span class="hidden sm:inline md:hidden">min</span>
+                                        <span class="hidden md:inline" x-text="unitLabel(minutes(), 'minute')"></span>
+                                    </p>
+                                </div>
+                                <div class="flex items-baseline justify-between rounded-lg bg-gray-900/40 p-3 sm:block">
+                                    <p class="text-3xl font-black" x-text="format(seconds())"></p>
+                                    <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
+                                        <span class="sm:hidden">seconds</span>
+                                        <span class="hidden sm:inline md:hidden">sec</span>
+                                        <span class="hidden md:inline" x-text="unitLabel(seconds(), 'second')"></span>
+                                    </p>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @endif
             </div>
         @break
 

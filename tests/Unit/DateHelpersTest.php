@@ -85,6 +85,23 @@ test('isPlantSaleOpenOnDate returns false when the weekday has no configured ope
     expect(DateHelpers::isPlantSaleOpenOnDate($date))->toBeFalse();
 });
 
+test('nextWristbandDistributionStart returns the next configured wristband time within seven days', function () {
+    $date = Carbon::create(2026, 5, 3, 12, 0, 0);
+
+    $nextWristbandStart = DateHelpers::nextWristbandDistributionStart($date, 7);
+
+    expect($nextWristbandStart)->not->toBeNull();
+    expect($nextWristbandStart?->toDateTimeString())->toBe('2026-05-07 14:00:00');
+});
+
+test('nextWristbandDistributionStart returns null when no configured sale day starts within seven days', function () {
+    $date = Carbon::create(2026, 5, 10, 20, 31, 0);
+
+    $nextWristbandStart = DateHelpers::nextWristbandDistributionStart($date, 7);
+
+    expect($nextWristbandStart)->toBeNull();
+});
+
 test('ps weekday calculations use calendar year for 2025-12-31 when ISO year is 2026', function () {
     $date = Carbon::create(2025, 12, 31);
 
