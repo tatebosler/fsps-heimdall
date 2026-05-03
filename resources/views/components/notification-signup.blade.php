@@ -102,24 +102,24 @@ new class extends Component {
                 @endphp
 
                 <form wire:submit="goToNotificationsStage" class="contents">
-                <div class="space-y-2 mb-4">
-                    <h1>Enter your cell phone number to get started</h1>
-                    <p>By entering your phone number, you agree to receive automated text messages from Friends School of Minnesota.</p>
-                    <p>Your phone number will only be used to send you the messages you subscribe to. (For more details, see our <a href="{{ route('privacy') }}" class="text-emerald-500 hover:text-emerald-600 active:text-emerald-700 dark:text-emerald-300 hover:dark:text-emerald-200 active:dark:text-emerald-100">privacy policy</a> and <a href="{{ route('terms') }}" class="text-emerald-500 hover:text-emerald-600 active:text-emerald-700 dark:text-emerald-300 hover:dark:text-emerald-200 active:dark:text-emerald-100">terms of service</a>.) We'll delete your phone number from our records after the sale is over.</p>
-                    <p>Please note that we are unable to send text messages to landline phone numbers, mobile numbers located outside the US or Canada, or some virtual numbers.</p>
-                    <p>Finally, while the Plant Sale doesn't charge for this service, messaging and data rates from your carrier may apply.</p>
-                </div>
-                <flux:input mask="(999) 999-9999" type="tel" icon="phone" placeholder="Enter your cell phone number" autocomplete="mobile tel-national" wire:model.live.debounce.200ms="phone" :invalid="$hasPhoneNanpError" />
-                @if ($hasPhoneNanpError)
-                    <p class="mt-2 text-sm text-red-600 dark:text-red-400">Please enter a valid US or Canada mobile phone number</p>
-                @endif
-
-                <div class="mt-auto pb-4 sm:pb-8">
-                    <div class="mt-4 sm:mt-8 flex items-center gap-4">
-                        <a href="{{ route('home') }}" class="bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-gray-100 px-4 py-2 rounded text-xl"><span class="fas fa-times"></span> Cancel</a>
-                        <button type="submit" class="ml-auto bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-600 text-emerald-100 text-xl px-4 py-2 rounded disabled:cursor-not-allowed disabled:opacity-50" @disabled($this->isPhoneStageNextDisabled())>Next &rarr;</button>
+                    <div class="space-y-2 mb-4">
+                        <h1>Enter your cell phone number to get started</h1>
+                        <p>By entering your phone number, you agree to receive automated text messages from Friends School of Minnesota.</p>
+                        <p>Your phone number will only be used to send you the messages you subscribe to. (For more details, see our <a href="{{ route('privacy') }}" class="text-emerald-500 hover:text-emerald-600 active:text-emerald-700 dark:text-emerald-300 hover:dark:text-emerald-200 active:dark:text-emerald-100">privacy policy</a> and <a href="{{ route('terms') }}" class="text-emerald-500 hover:text-emerald-600 active:text-emerald-700 dark:text-emerald-300 hover:dark:text-emerald-200 active:dark:text-emerald-100">terms of service</a>.) We'll delete your phone number from our records after the sale is over.</p>
+                        <p>Please note that we are unable to send text messages to landline phone numbers, mobile numbers located outside the US or Canada, or some virtual numbers.</p>
+                        <p>Finally, while the Plant Sale doesn't charge for this service, messaging and data rates from your carrier may apply.</p>
                     </div>
-                </div>
+                    <flux:input mask="(999) 999-9999" type="tel" icon="phone" placeholder="Enter your cell phone number" autocomplete="mobile tel-national" wire:model.live.debounce.200ms="phone" :invalid="$hasPhoneNanpError" />
+                    @if ($hasPhoneNanpError)
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">Please enter a valid US or Canada mobile phone number</p>
+                    @endif
+
+                    <div class="mt-auto pb-4 sm:pb-8">
+                        <div class="mt-4 sm:mt-8 flex items-center gap-4">
+                            <a href="{{ route('home') }}" class="bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-gray-100 px-4 py-2 rounded text-xl"><span class="fas fa-times"></span> Cancel</a>
+                            <button type="submit" class="ml-auto bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-600 text-emerald-100 text-xl px-4 py-2 rounded disabled:cursor-not-allowed disabled:opacity-50" @disabled($this->isPhoneStageNextDisabled())>Next &rarr;</button>
+                        </div>
+                    </div>
                 </form>
                 @break
 
