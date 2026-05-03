@@ -222,9 +222,6 @@ new #[Title('Entry Status')] class extends Component
                             format(value) {
                                 return String(value);
                             },
-                            unitLabel(value, singular) {
-                                return value === 1 ? singular : `${singular}s`;
-                            },
                         }"
                     >
                         <p class="text-lg font-semibold">
@@ -249,7 +246,7 @@ new #[Title('Entry Status')] class extends Component
                                     <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
                                         <span class="sm:hidden">days</span>
                                         <span class="hidden sm:inline md:hidden">days</span>
-                                        <span class="hidden md:inline" x-text="unitLabel(days(), 'day')"></span>
+                                        <span class="hidden md:inline" x-text="days() === 1 ? 'day' : 'days'"></span>
                                     </p>
                                 </div>
                                 <div class="flex items-baseline justify-between rounded-lg bg-gray-900/40 p-3 sm:block">
@@ -257,7 +254,7 @@ new #[Title('Entry Status')] class extends Component
                                     <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
                                         <span class="sm:hidden">hours</span>
                                         <span class="hidden sm:inline md:hidden">hrs</span>
-                                        <span class="hidden md:inline" x-text="unitLabel(hours(), 'hour')"></span>
+                                        <span class="hidden md:inline" x-text="hours() === 1 ? 'hour' : 'hours'"></span>
                                     </p>
                                 </div>
                                 <div class="flex items-baseline justify-between rounded-lg bg-gray-900/40 p-3 sm:block">
@@ -265,7 +262,7 @@ new #[Title('Entry Status')] class extends Component
                                     <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
                                         <span class="sm:hidden">minutes</span>
                                         <span class="hidden sm:inline md:hidden">min</span>
-                                        <span class="hidden md:inline" x-text="unitLabel(minutes(), 'minute')"></span>
+                                        <span class="hidden md:inline" x-text="minutes() === 1 ? 'minute' : 'minutes'"></span>
                                     </p>
                                 </div>
                                 <div class="flex items-baseline justify-between rounded-lg bg-gray-900/40 p-3 sm:block">
@@ -273,7 +270,7 @@ new #[Title('Entry Status')] class extends Component
                                     <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
                                         <span class="sm:hidden">seconds</span>
                                         <span class="hidden sm:inline md:hidden">sec</span>
-                                        <span class="hidden md:inline" x-text="unitLabel(seconds(), 'second')"></span>
+                                        <span class="hidden md:inline" x-text="seconds() === 1 ? 'second' : 'seconds'"></span>
                                     </p>
                                 </div>
                             </div>

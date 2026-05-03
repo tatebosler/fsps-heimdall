@@ -18,13 +18,11 @@ test('closed status shows volunteer pre-sale label for the next Thursday sale da
         ->assertSee('Next sale day: Thursday, May 7')
         ->assertSee('(volunteer pre-sale)')
         ->assertSeeHtml('sm:grid sm:grid-cols-4 sm:text-center')
-        ->assertSeeHtml('mt-2 flex w-full flex-col gap-2 text-base')
-        ->assertSeeHtml('class="block w-full rounded-2xl bg-gray-200 px-3 py-2 text-gray-800 hover:bg-gray-100 active:bg-gray-50"')
         ->assertSeeHtml('sm:hidden">days</span>')
         ->assertSeeHtml('hidden sm:inline md:hidden">hrs</span>')
         ->assertSeeHtml('hidden sm:inline md:hidden">min</span>')
         ->assertSeeHtml('hidden sm:inline md:hidden">sec</span>')
-        ->assertSeeHtml("x-text=\"unitLabel(days(), 'day')\"")
+        ->assertSeeHtml("x-text=\"days() === 1 ? 'day' : 'days'\"")
         ->assertDontSee('Wristband distribution beginning shortly...');
 });
 

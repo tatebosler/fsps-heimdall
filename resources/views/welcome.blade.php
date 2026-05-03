@@ -1,16 +1,13 @@
 <x-layouts.app>
     <div class="grid sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-8 m-4 sm:m-8">
         <div class="sm:hidden">
-            <img src="{{ asset('logo/horizontal-dark.svg') }}" class="not-dark:hidden">
-            <img src="{{ asset('logo/horizontal-light.svg') }}" class="dark:hidden">
+            <x-logo horizontal />
         </div>
         <div class="max-sm:hidden lg:hidden">
-            <img src="{{ asset('logo/logo-dark.svg') }}" class="not-dark:hidden">
-            <img src="{{ asset('logo/logo-light.svg') }}" class="dark:hidden">
+            <x-logo />
         </div>
         <div class="max-lg:hidden col-span-3">
-            <img src="{{ asset('logo/horizontal-dark.svg') }}" class="not-dark:hidden">
-            <img src="{{ asset('logo/horizontal-light.svg') }}" class="dark:hidden">
+            <x-logo horizontal />
         </div>
         <div class="sm:col-span-2">
             <livewire:entry-status />

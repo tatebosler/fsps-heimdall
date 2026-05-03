@@ -1,9 +1,6 @@
 <?php
 
 use App\Models\Channel;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-pest()->use(RefreshDatabase::class);
 
 test('channels can be created with an ID only', function () {
     $channel = Channel::create(['id' => '12345']);
@@ -28,5 +25,5 @@ test('special channels have descriptions pulled from config file', function () {
 test('standard channels have wristband groups as their descriptions', function () {
     $standardChannel = Channel::create(['id' => '37400']);
 
-    expect($standardChannel->getDescription())->toBe("Thursday Group 0 (2026)");
+    expect($standardChannel->getDescription())->toBe('Thursday Group 0 (2026)');
 });
