@@ -14,6 +14,11 @@ return new class extends Migration
         Schema::create('channels', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
+            $table->timestamp('customers_arrived_at')->nullable();
+            $table->timestamp('distribution_started_at')->nullable();
+            $table->timestamp('estimated_entry_at')->nullable();
+            $table->timestamp('original_estimated_entry_at')->nullable();
+            $table->timestamp('cleared_at')->nullable();
         });
     }
 

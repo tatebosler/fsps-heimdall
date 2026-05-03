@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['id'])]
 class Channel extends Model
@@ -14,9 +15,22 @@ class Channel extends Model
     /** @use HasFactory<\Database\Factories\ChannelFactory> */
     use HasFactory;
 
+    protected $casts = [
+        'customers_arrived_at' => 'datetime',
+        'distribution_started_at' => 'datetime',
+        'estimated_entry_at' => 'datetime',
+        'original_estimated_entry_at' => 'datetime',
+        'cleared_at' => 'datetime',
+    ];
+
     public function subscribers(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
+    }
+
+    public function estimates(): HasMany
+    {
+        return $this->hasMany(Estimate::class);
     }
 
     public function isSpecial(): bool
