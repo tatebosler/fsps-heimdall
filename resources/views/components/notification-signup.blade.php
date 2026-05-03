@@ -9,6 +9,7 @@ use Livewire\Component;
 new class extends Component {
     public $stage = 'phone';
     public $phone = '';
+    public $channelCode = '';
 
     public ?User $user = null;
     public $availableChannels = [];
@@ -95,6 +96,10 @@ new class extends Component {
 
     public function subscribe(int $channelId): void
     {
+        $current_ps_year = DateHelpers::psYearForDate(now()) * 1000;
+        if ($channelId % 1000 < 100 || $channelId % 1000 >= 900 || (int) floor($channelId / 1000) * 1000 !== $current_ps_year) {
+            return;
+        }
         if (!in_array($channelId, $this->subscribedChannelIds)) {
             $this->subscribedChannelIds[] = $channelId;
         }
@@ -102,6 +107,10 @@ new class extends Component {
 
     public function unsubscribe(int $channelId): void
     {
+        $current_ps_year = DateHelpers::psYearForDate(now()) * 1000;
+        if ((int) floor($channelId / 1000) * 1000 !== $current_ps_year) {
+            return;
+        }
         if (in_array($channelId, $this->subscribedChannelIds)) {
             $this->subscribedChannelIds = array_diff($this->subscribedChannelIds, [$channelId]);
         }
@@ -121,6 +130,33 @@ new class extends Component {
         $this->user->channels()->sync($this->subscribedChannelIds);
 
         $this->stage = 'confirmation';
+    }
+
+    public function addChannelCode(): void
+    {
+        $current_ps_year = DateHelpers::psYearForDate(now()) * 1000;
+        $channelId = (int) $this->channelCode;
+        if ($channelId % 1000 < 900 || (int) floor($channelId / 1000) * 1000 !== $current_ps_year) {
+            $this->channelCode = '';
+            $this->modal('channel-code')->close();
+            return;
+        }
+
+        $config_suffix = str_pad($channelId % 100, 2, '0', STR_PAD_LEFT);
+        if (!config()->has('ps.special_channel_suffixes.' . $config_suffix)) {
+            $this->channelCode = '';
+            $this->modal('channel-code')->close();
+            return;
+        }
+
+        $channel = Channel::firstOrCreate(['id' => $channelId]);
+
+        if (!in_array($channel->id, $this->subscribedChannelIds)) {
+            $this->subscribedChannelIds[] = $channel->id;
+        }
+
+        $this->channelCode = '';
+        $this->modal('channel-code')->close();
     }
 };
 ?>
@@ -171,17 +207,17 @@ new class extends Component {
                 @endphp
 
                 <form wire:submit="goToNotificationsStage" class="contents">
-                <div class="space-y-2 mb-4">
-                    <h1>Enter your cell phone number to get started</h1>
-                    <p>By entering your phone number, you agree to receive automated text messages from Friends School of Minnesota.</p>
-                    <p>Your phone number will only be used to send you the messages you subscribe to. (For more details, see our <a href="{{ route('privacy') }}" class="text-emerald-500 hover:text-emerald-600 active:text-emerald-700 dark:text-emerald-300 hover:dark:text-emerald-200 active:dark:text-emerald-100">privacy policy</a> and <a href="{{ route('terms') }}" class="text-emerald-500 hover:text-emerald-600 active:text-emerald-700 dark:text-emerald-300 hover:dark:text-emerald-200 active:dark:text-emerald-100">terms of service</a>.) We'll delete your phone number from our records after the sale is over.</p>
-                    <p>Please note that we are unable to send text messages to landline phone numbers, mobile numbers located outside the US or Canada, or some virtual numbers.</p>
-                    <p>Finally, while the Plant Sale doesn't charge for this service, messaging and data rates from your carrier may apply.</p>
-                </div>
-                <flux:input mask="(999) 999-9999" type="tel" icon="phone" placeholder="Enter your cell phone number" autocomplete="mobile tel-national" wire:model.live.debounce.200ms="phone" :invalid="$hasPhoneNanpError" />
-                @if ($hasPhoneNanpError)
-                    <p class="mt-2 text-sm text-red-600 dark:text-red-400">Please enter a valid US or Canada mobile phone number</p>
-                @endif
+                    <div class="space-y-2 mb-4">
+                        <h1>Enter your cell phone number to get started</h1>
+                        <p>By entering your phone number, you agree to receive automated text messages from Friends School of Minnesota.</p>
+                        <p>Your phone number will only be used to send you the messages you subscribe to. (For more details, see our <a href="{{ route('privacy') }}" class="text-emerald-500 hover:text-emerald-600 active:text-emerald-700 dark:text-emerald-300 hover:dark:text-emerald-200 active:dark:text-emerald-100">privacy policy</a> and <a href="{{ route('terms') }}" class="text-emerald-500 hover:text-emerald-600 active:text-emerald-700 dark:text-emerald-300 hover:dark:text-emerald-200 active:dark:text-emerald-100">terms of service</a>.) We'll delete your phone number from our records after the sale is over.</p>
+                        <p>Please note that we are unable to send text messages to landline phone numbers, mobile numbers located outside the US or Canada, or some virtual numbers.</p>
+                        <p>Finally, while the Plant Sale doesn't charge for this service, messaging and data rates from your carrier may apply.</p>
+                    </div>
+                    <flux:input mask="(999) 999-9999" type="tel" icon="phone" placeholder="Enter your cell phone number" autocomplete="mobile tel-national" wire:model.live.debounce.200ms="phone" :invalid="$hasPhoneNanpError" />
+                    @if ($hasPhoneNanpError)
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">Please enter a valid US or Canada mobile phone number</p>
+                    @endif
 
                     <div class="mt-auto pb-4 sm:pb-8">
                         <div class="mt-4 sm:mt-8 flex items-center gap-4 sm:gap-8">
@@ -207,30 +243,63 @@ new class extends Component {
                         <span class="text-xl">Text me when wristbands are no longer required for today</span>
                     </div>
                 @else
-                    <div class="flex items-center gap-2 bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl mt-4 cursor-pointer" wire:click="subscribe({{ $offBandsChannelId }})">
+                    <div class="flex items-center gap-2 bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl my-4 cursor-pointer" wire:click="subscribe({{ $offBandsChannelId }})">
                         <span class="text-2xl far fa-circle"></span>
                         <span class="text-xl">Text me when wristbands are no longer required for today</span>
                     </div>
                 @endif
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                    @foreach ($availableChannels as $channel)
-                        <div class="flex items-center gap-2 rounded-xl cursor-pointer bg-{{ in_array($channel->id, $subscribedChannelIds) ? config('ps.colors.'.date('l')) : 'gray' }}-300 dark:bg-{{ in_array($channel->id, $subscribedChannelIds) ? config('ps.colors.'.date('l')) : 'gray' }}-700 p-2 sm:p-4" wire:click="toggleSubscription({{ $channel->id }})">
-                            <span class="text-2xl {{ in_array($channel->id, $subscribedChannelIds) ? 'fas fa-circle-check' : 'far fa-circle' }}"></span>
-                            <div>
-                                <p class="text-xl">Group <span class="font-black">{{ $channel->id % 100 }}</span></p>
-                                <p class="text-sm">Estimated entry time {{ optional($channel->estimatedEntryTime)->format('g:i A') }}</p>
+                @if (count($availableChannels))
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
+                        @foreach ($availableChannels as $channel)
+                            <div class="flex items-center gap-2 rounded-xl cursor-pointer bg-{{ in_array($channel->id, $subscribedChannelIds) ? config('ps.colors.'.date('l')) : 'gray' }}-300 dark:bg-{{ in_array($channel->id, $subscribedChannelIds) ? config('ps.colors.'.date('l')) : 'gray' }}-700 p-2 sm:p-4" wire:click="toggleSubscription({{ $channel->id }})">
+                                <span class="text-2xl {{ in_array($channel->id, $subscribedChannelIds) ? 'fas fa-circle-check' : 'far fa-circle' }}"></span>
+                                <div>
+                                    <p class="text-xl">Group <span class="font-black">{{ $channel->id % 100 }}</span></p>
+                                    <p class="text-sm">Estimated entry time {{ optional($channel->estimatedEntryTime)->format('g:i A') }}</p>
+                                </div>
                             </div>
-                        </div>
-                    @endforeach
-
-                </div>
+                        @endforeach
+                    </div>
+                @else
+                @endif
+                <flux:modal.trigger name="channel-code">
+                    <div class="flex items-center gap-2 bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl mt-4 cursor-pointer my-4">
+                        <span class="text-2xl fas fa-bullhorn"></span>
+                        <span class="text-xl">I have a Channel Code</span>
+                    </div>
+                </flux:modal.trigger>
+                @foreach (array_filter($subscribedChannelIds, fn($id) => ($id % 1000 >= 900 and ($id % 100 > 90 or $id % 10 < 9))) as $channelId)
+                    <div class="flex items-center gap-2 bg-{{ config('ps.colors.'.date('l')) }}-300 dark:bg-{{ config('ps.colors.'.date('l')) }}-700 p-2 sm:p-4 rounded-xl mt-4 cursor-pointer" wire:click="unsubscribe({{ $channelId }})">
+                        <span class="text-2xl fas fa-circle-check"></span>
+                        <span class="text-xl">{{ Channel::find($channelId)->getDescription() }}</span>
+                    </div>
+                @endforeach
                 <div class="mt-auto pb-4 sm:pb-8">
                     <div class="mt-4 sm:mt-8 gap-4 sm:gap-8 flex items-center">
                         <button type="button" class="bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-gray-100 px-4 py-2 rounded text-xl min-w-32" wire:click="$set('stage', 'phone')"><span class="fas fa-arrow-left"></span> Back</button>
                         <button type="button" class="block ml-auto w-full bg-emerald-800 hover:bg-emerald-700 active:bg-emerald-600 text-emerald-100 text-xl px-4 py-2 rounded disabled:cursor-not-allowed disabled:opacity-50" wire:click="saveSubscriptions">Save <span class="fas fa-arrow-right"></span></button>
                     </div>
                 </div>
+
+                <flux:modal name="channel-code" class="md:w-96">
+                    <div class="space-y-6">
+                        <div>
+                            <flux:heading size="lg">Subscribe via Channel Code</flux:heading>
+                            <flux:text class="mt-2">Plant Sale coordinators: if you have a Channel Code, you can use it to subscribe to special notification types.</flux:text>
+                        </div>
+                        <form wire:submit="addChannelCode" class="contents">
+
+                            <flux:input type="tel" autocomplete="off" label="Channel Code" wire:model="channelCode" placeholder="Your Channel Code" />
+
+                            <div class="flex mt-4">
+                                <flux:spacer />
+
+                                <flux:button type="submit" variant="primary">Add channel</flux:button>
+                            </div>
+                        </form>
+                    </div>
+                </flux:modal>
                 @break
 
             @case('confirmation')

@@ -7,7 +7,7 @@ use DateTimeInterface;
 
 class DateHelpers
 {
-    public static function psYearForDate($date): int
+    public static function psYearForDate(DateTimeInterface $date): int
     {
         $yearZero = config('ps.year_zero');
         $year = $date->year;
