@@ -67,8 +67,6 @@ return [
         '99' => 'Firehose',
     ],
 
-    'month' => 5,
-
     'group_zero' => [
         'Thursday' => [
             'shift_end_timestamps' => [
@@ -77,13 +75,14 @@ return [
             'shift_start_timestamps' => [
                 ['16:30', '20:30'],
             ],
-        ]
+        ],
     ],
 
     'anchor' => [
         'weekday' => 'Sunday',
+        'month' => 5,
         'occurrence_in_month' => 2,
-        'anchor_to' => 'last'
+        'anchor_to' => 'end',
     ],
 
     'hours' => [
@@ -112,5 +111,5 @@ return [
             'open' => '10:00',
             'close' => '14:00',
         ],
-    ]
+    ],
 ];
