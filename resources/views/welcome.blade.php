@@ -54,18 +54,13 @@
                 <li>You can <a href="https://www.friendsschoolplantsale.com/gardenfair" class="text-emerald-500 hover:text-emerald-600 active:text-emerald-700 dark:text-emerald-300 hover:dark:text-emerald-200 active:dark:text-emerald-100">explore the Garden Fair</a>, including our food vendors, while you wait for your group to be called. Signage at the Information tent and Wristband Booth is periodically updated with which groups are welcome to enter the sale. You can also choose to leave the area entirely and come back later.</li>
                 <li>When your group is called, follow the signage down the hill, past Sweet Martha's, and into the Grandstand. Show your wristband to the volunteers at the entrance gate and enjoy the sale!</li>
             </ol>
-            <flux:callout color="blue">
-                <x-slot name="icon">
-                    <span class="fab fa-accessible-icon text-xl mr-1 text-blue-500 dark:text-blue-300"></span>
-                </x-slot>
-
-                <flux:callout.heading>We've improved our accessibillity offerings and accessible entry process for 2026</flux:callout.heading>
-
-                <flux:callout.text>
-                    Customers with disability parking certificates or plates should park in our new accessible parking lot to enter the Plant Sale. Don't worry... we'll have volunteers on hand to distribute wristbands and answer questions once you arrive. You can also park in the accessible section of the general parking lot, if that's your preference.
-                    <flux:callout.link href="https://www.friendsschoolplantsale.com/accessibility">Learn more</flux:callout.link>
-                </flux:callout.text>
-            </flux:callout>
+            <div class="bg-blue-200 text-blue-950 dark:bg-blue-800 dark:text-blue-50 rounded-xl border-blue-400 dark:border-blue-600 border-2 p-4 flex items-start gap-3">
+                <div class="fab fa-accessible-icon text-xl mt-1.5"></div>
+                <div>
+                    <p class="text-lg sm:text-xl mb-2"><strong>We've improved our accessibillity offerings and accessible entry process for 2026</strong></p>
+                    <p>Customers with disability parking certificates or plates should park in our new accessible parking lot to enter the Plant Sale. Don't worry... we'll have volunteers on hand to distribute wristbands and answer questions once you arrive. You can also park in the accessible section of the general parking lot, if that's your preference. <a href="https://www.friendsschoolplantsale.com/accessibility" class="text-blue-800 hover:text-blue-900 active:text-blue-950 dark:text-blue-200 hover:dark:text-blue-100 active:dark:text-blue-50 font-bold">Learn more &rarr;</a></p>
+                </div>
+            </div>
             <p>Some policy notes to help you get and use your wristband smoothly:</p>
             <ul class="list-disc ml-8 space-y-0.5 sm:space-y-1">
                 <li>Wristbands are required for everyone age 13 and up. Kids age 12 and under do not need their own wristbands and must be accompanied by an adult.</li>
@@ -75,13 +70,13 @@
                 <li>You may re-enter the Plant Sale the same day without getting a new wristband, so long as you keep your wristband on and intact.</li>
                 <li>Wristbands are void if removed or tampered with.</li>
             </ul>
-            <flux:callout color="yellow" icon="exclamation-triangle">
-                <flux:callout.heading>Heads up for volunteers shopping on Thursday</flux:callout.heading>
-
-                <flux:callout.text>
-                    Your Golden Ticket is only valid for one scan, and will be scanned either at the entrance gate or at the Wristband Booth. This means that if you do not receive a wristband when your ticket is scanned, and you wish to re-enter the sale later that day, <strong>you must get a wristband at the Info Desk inside the sale before you check out.</strong>
-                </flux:callout.text>
-            </flux:callout>
+            <div class="bg-yellow-200 text-yellow-950 dark:bg-yellow-800 dark:text-yellow-50 rounded-xl border-yellow-400 dark:border-yellow-600 border-2 p-4 flex items-start gap-3">
+                <div class="fas fa-exclamation-triangle text-xl mt-1.5"></div>
+                <div>
+                    <p class="text-lg sm:text-xl mb-2"><strong>Heads up to volunteers shopping on Thursday</strong></p>
+                    <p>Your Golden Ticket is only valid for one scan, and will be scanned either at the entrance gate or at the Wristband Booth. This means that if you do not receive a wristband when your ticket is scanned, and you wish to re-enter the sale later that day, <strong>you must get a wristband at the Info Desk inside the sale before you check out.</strong></p>
+                </div>
+            </div>
         </div>
     </div>
 </x-layouts.app>
