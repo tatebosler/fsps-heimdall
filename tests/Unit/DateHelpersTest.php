@@ -3,7 +3,6 @@
 use App\Helpers\DateHelpers;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
-use DateTime;
 
 test('calendarYearForPsYear returns the correct calendar year for a given PS year', function () {
     // Arrange
