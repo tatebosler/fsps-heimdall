@@ -9,9 +9,10 @@ use App\Notifications\OffBands;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new class extends Component
+new #[Title('Tower Dashboard')] class extends Component
 {
     public int $nextGroup = 0;
     public ?int $lastCleared = 0;
@@ -124,7 +125,7 @@ new class extends Component
                 ->merge($dayFirehoseSubscribers)
                 ->unique('id')
                 ->each(function ($subscriber) use ($channel) {
-                    $subscriber->notify(new OffBands($channel));
+                    $subscriber->notify(new OffBands());
                 });
             $this->lastNotified = $clearedSubscribers->unique('id')->count();
         } else {

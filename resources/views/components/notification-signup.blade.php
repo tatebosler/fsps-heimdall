@@ -5,9 +5,10 @@ use App\Models\Channel;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new class extends Component {
+new #[Title('Entry Texting System')] class extends Component {
     public $stage = 'phone';
     public $phone = '';
     public $channelCode = '';

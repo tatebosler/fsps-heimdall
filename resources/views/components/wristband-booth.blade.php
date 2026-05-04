@@ -5,9 +5,10 @@ use App\Helpers\EntryTimeEstimator;
 use App\Models\Channel;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new class extends Component
+new #[Title('Wristband Booth Dashboard')] class extends Component
 {
     public int $nextGroup = 0;
     public ?Carbon $lastDistributedAt = null;
