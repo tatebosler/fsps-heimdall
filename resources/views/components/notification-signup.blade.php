@@ -83,10 +83,13 @@ new class extends Component {
         $this->offBandsChannelId = $off_bands_channel_id;
         $this->availableChannels = $standard_channels->all();
 
-        if (!$this->user) {
-            $this->user = User::firstOrCreate(['phone' => $this->phoneDigits()]);
+        if (! $this->user) {
+            $this->subscribedChannelIds = [];
+
+            return;
         }
 
+        $this->subscribedChannelIds = [];
         foreach ($this->user->channels as $channel) {
             $channel_floor = (int) floor($channel->id / 1000) * 1000;
             if ($channel_floor === $current_ps_year) {

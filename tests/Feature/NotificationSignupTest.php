@@ -1,6 +1,13 @@
 <?php
 
+use App\Models\User;
 use Livewire\Livewire;
+
+test('loading notification signup does not create a user record', function () {
+    Livewire::test('notification-signup');
+
+    expect(User::count())->toBe(0);
+});
 
 test('phone stage shows NANP error for full-length invalid number', function () {
     Livewire::test('notification-signup')
