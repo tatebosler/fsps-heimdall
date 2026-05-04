@@ -97,7 +97,7 @@ new class extends Component {
     public function subscribe(int $channelId): void
     {
         $current_ps_year = DateHelpers::psYearForDate(now()) * 1000;
-        if ($channelId % 1000 < 100 || $channelId % 1000 >= 900 || (int) floor($channelId / 1000) * 1000 !== $current_ps_year) {
+        if ($channelId % 1000 < 100 || ($channelId % 1000 >= 900 && $channelId % 10 < 9) || (int) floor($channelId / 1000) * 1000 !== $current_ps_year) {
             return;
         }
         if (!in_array($channelId, $this->subscribedChannelIds)) {
@@ -243,7 +243,7 @@ new class extends Component {
                         <span class="text-xl">Text me when wristbands are no longer required for today</span>
                     </div>
                 @else
-                    <div class="flex items-center gap-2 bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl my-4 cursor-pointer" wire:click="subscribe({{ $offBandsChannelId }})">
+                    <div class="flex items-center gap-2 bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl mt-4 cursor-pointer" wire:click="subscribe({{ $offBandsChannelId }})">
                         <span class="text-2xl far fa-circle"></span>
                         <span class="text-xl">Text me when wristbands are no longer required for today</span>
                     </div>
