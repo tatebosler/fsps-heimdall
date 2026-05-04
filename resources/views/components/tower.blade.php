@@ -8,11 +8,11 @@ use App\Notifications\NextGroup;
 use App\Notifications\OffBands;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Tower Dashboard')] class extends Component
+new #[Layout('components.layouts.admin')] #[Title('Tower Dashboard')] class extends Component
 {
     public int $nextGroup = 0;
     public ?int $lastCleared = 0;

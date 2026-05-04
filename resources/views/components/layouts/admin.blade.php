@@ -31,11 +31,11 @@
 
         <flux:sidebar.nav>
             <flux:sidebar.group heading="Customer Entry" icon="arrow-right-end-on-rectangle">
-                <flux:sidebar.item href="/admin/wb" :current="request()->is('admin/wb')">
+                <flux:sidebar.item href="/wb" :current="request()->is('wb')">
                     <span class="fas fa-store"></span>
                     Wristband Booth
                 </flux:sidebar.item>
-                <flux:sidebar.item href="/admin/tower" :current="request()->is('admin/tower')">
+                <flux:sidebar.item href="/tower" :current="request()->is('tower')">
                     <span class="fas fa-tower-observation"></span>
                     Tower
                 </flux:sidebar.item>
@@ -73,22 +73,6 @@
                     Ticket Management
                 </flux:sidebar.item>
             </flux:sidebar.group>
-
-            <flux:sidebar.spacer class="my-2" />
-
-            <div class="px-4 pb-4">
-                <form method="POST" action="{{ route('admin.password.destroy') }}" class="mt-3">
-                    @csrf
-                    @method('DELETE')
-
-                    <button
-                        type="submit"
-                        class="flex w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
-                    >
-                        Lock coordinator tools
-                    </button>
-                </form>
-            </div>
         </flux:sidebar.nav>
     </flux:sidebar>
 
