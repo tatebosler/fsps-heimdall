@@ -39,7 +39,6 @@ class EntryTimeEstimator
         }
         $firstGroupOfToday = (int) !array_key_exists(date('l'), config('ps.group_zero'));
         foreach ($pendingChannels as $channel) {
-            Log::info("Estimating entry time for channel {$channel->id}");
             if ($channel->id % 100 === $firstGroupOfToday) {
                 $estimatedEntryAt = $lastCleared->copy();
             } else {
@@ -51,6 +50,15 @@ class EntryTimeEstimator
             $channel->estimated_entry_at = $estimatedEntryAt;
             $channel->save();
             $lastCleared = $estimatedEntryAt;
+
+            $lastGoodEstimate = Estimate::where('channel_id', $channel->id)->orderBy('created_at', 'desc')->first();
+            if ($lastGoodEstimate) {
+                if ($lastGoodEstimate->estimated_entry_at->diffInSeconds($estimatedEntryAt, true) < 1) {
+                    continue;
+                } else if ($lastGoodEstimate->estimated_entry_at->diffInMinutes($estimatedEntryAt, true) > 30) {
+                    Log::info("Significant time change for channel {$channel->id}: was {$lastGoodEstimate->estimated_entry_at}, now {$estimatedEntryAt}");
+                }
+            }
 
             Estimate::create([
                 'channel_id' => $channel->id,
