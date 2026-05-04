@@ -72,7 +72,7 @@ new class extends Component
             Start distributing group {{ $nextGroup }}
         </button>
         @if ($nextGroup > 1)
-            <div class="mx-4 py-2 px-3 bg-gray-200 dark:bg-gray-800 rounded-b text-center max-sm:text-xs">
+            <div class="mx-4 py-2 px-3 bg-gray-200 dark:bg-gray-800 rounded-b text-center max-sm:text-xs" wire:poll>
                 <p>Group {{ $nextGroup - 1 }} distribution started {{ $lastDistributedAt->diffForHumans() }}</p>
             </div>
         @endif

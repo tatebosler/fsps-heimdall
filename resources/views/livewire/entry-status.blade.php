@@ -310,14 +310,14 @@ new #[Title('Entry Status')] class extends Component
                         </div>
                     </div>
                 @else
-                    <div class="flex items-center bg-{{ $this->color() }}-100 dark:bg-{{ $this->color() }}-900">
-                        <div class="p-2 text-xl">Currently distributing wristband group</div>
-                        <div class="bg-{{ $this->color() }}-300 dark:bg-{{ $this->color() }}-700 ml-auto w-40 shrink-0 text-center text-4xl font-black py-4">{{ $this->distributing }}</div>
+                    <div class="flex items-stretch bg-{{ $this->color() }}-100 dark:bg-{{ $this->color() }}-900">
+                        <div class="flex-1 p-2 sm:text-xl min-h-16 flex items-center">Currently distributing wristband group</div>
+                        <div class="bg-{{ $this->color() }}-300 dark:bg-{{ $this->color() }}-700 ml-auto w-40 shrink-0 self-stretch flex items-center justify-center text-center text-4xl font-black">{{ $this->distributing }}</div>
                     </div>
                     @if ($this->saleStatus() === 'on-bands')
-                        <div class="flex items-center mt-1 bg-{{ $this->color() }}-100 dark:bg-{{ $this->color() }}-900">
-                            <div class="p-2 text-xl">Currently welcoming customers in {{ $this->clearing === $this->firstGroup() ? 'group' : 'groups' }}</div>
-                            <div class="bg-{{ $this->color() }}-300 dark:bg-{{ $this->color() }}-700 ml-auto w-40 shrink-0 text-center text-4xl font-black py-4">{{ $this->clearingDisplay() }}</div>
+                        <div class="flex items-stretch mt-1 bg-{{ $this->color() }}-100 dark:bg-{{ $this->color() }}-900">
+                            <div class="flex-1 p-2 sm:text-xl min-h-16 flex items-center">Currently welcoming customers in {{ $this->clearing === $this->firstGroup() ? 'group' : 'groups' }}</div>
+                            <div class="bg-{{ $this->color() }}-300 dark:bg-{{ $this->color() }}-700 ml-auto w-40 shrink-0 self-stretch flex items-center justify-center text-center text-4xl font-black">{{ $this->clearingDisplay() }}</div>
                         </div>
                     @endif
                     @if ($this->waitTime() === null)
@@ -328,8 +328,10 @@ new #[Title('Entry Status')] class extends Component
                         <div class="flex flex-col text-center items-center p-2">
                             <p>Customers arriving at the Plant Sale right now can expect to wait</p>
                             <p class="text-3xl font-bold my-2">{{ $this->waitTime() }}</p>
-                            <p>Wait times fluctuate throughout the day.</p>
-                            <p>If you're not at the sale yet, your wait time will likely be different when you arrive.</p>
+                            @unless($this->hideActions)
+                                <p>Wait times fluctuate throughout the day.</p>
+                                <p>If you're not at the sale yet, your wait time will likely be different when you arrive.</p>
+                            @endunless
                         </div>
                     @endif
                 @endif
