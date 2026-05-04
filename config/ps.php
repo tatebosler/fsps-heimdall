@@ -68,14 +68,6 @@ return [
     ],
 
     'group_zero' => [
-        'Monday' => [
-            'shift_end_timestamps' => [
-                ['14:00', '14:30'],
-            ],
-            'shift_start_timestamps' => [
-                ['16:30', '20:30'],
-            ],
-        ],
         'Thursday' => [
             'shift_end_timestamps' => [
                 ['14:00', '14:30'],
@@ -94,13 +86,6 @@ return [
     ],
 
     'hours' => [
-        'Monday' => [
-            'gates' => '12:00',
-            'wristbands' => '14:00',
-            'off_bands_estimate' => '16:00',
-            'open' => '14:30',
-            'close' => '20:30',
-        ],
         'Thursday' => [
             'gates' => '12:00',
             'wristbands' => '14:00',
@@ -129,7 +114,6 @@ return [
     ],
 
     'historical_clear_rates' => [
-        'Monday' => 10,
         'Thursday' => 10,
         'Friday' => 7.4,
         'Saturday' => 6.2,
@@ -137,7 +121,6 @@ return [
     ],
 
     'historical_group_counts' => [
-        'Monday' => 17,
         'Thursday' => 5,
         'Friday' => 50,
         'Saturday' => 30,
