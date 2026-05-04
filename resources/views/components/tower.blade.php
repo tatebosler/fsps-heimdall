@@ -3,6 +3,9 @@
 use App\Helpers\DateHelpers;
 use App\Helpers\EntryTimeEstimator;
 use App\Models\Channel;
+use App\Notifications\GroupCleared;
+use App\Notifications\NextGroup;
+use App\Notifications\OffBands;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
@@ -11,6 +14,7 @@ new class extends Component
 {
     public int $nextGroup = 0;
     public ?int $lastCleared = 0;
+    public ?int $lastNotified = 0;
     public ?Carbon $lastClearedAt = null;
 
     public function mount()
@@ -82,6 +86,50 @@ new class extends Component
             Cache::set('entry-clearing', $this->nextGroup);
         }
 
+        // Get the correct subscribers for the notification.
+        // If clearing off-bands or group 0, notify the channel we just cleared. Otherwise, get the next channel.
+        // Always notify xx9y9 and xx999.
+
+        $firehoseSubscribers = Channel::firstOrCreate(['id' => "{$psYear}999"])->subscribers;
+        $dayFirehoseSubscribers = Channel::firstOrCreate(['id' => "{$psYear}9" . date('N') . "9"])->subscribers;
+
+        if ($channel->id % 100 === 0) {
+            $clearedSubscribers = $channel->subscribers;
+            $clearedSubscribers->merge($firehoseSubscribers)
+                ->merge($dayFirehoseSubscribers)
+                ->unique('id')
+                ->each(function ($subscriber) use ($channel) {
+                    $subscriber->notify(new GroupCleared($channel));
+                });
+
+            $nextChannel = Channel::firstOrCreate(['id' => $channel->id + 1])->subscribers;
+            $nextChannel->merge($firehoseSubscribers)
+                ->merge($dayFirehoseSubscribers)
+                ->unique('id')
+                ->each(function ($subscriber) use ($channel) {
+                    $subscriber->notify(new NextGroup($channel));
+                });
+            $this->lastNotified = $clearedSubscribers->unique('id')->count() + $nextChannel->unique('id')->count();
+        } else if ($channel->isSpecial()) {
+            $clearedSubscribers = $channel->subscribers;
+            $clearedSubscribers->merge($firehoseSubscribers)
+                ->merge($dayFirehoseSubscribers)
+                ->unique('id')
+                ->each(function ($subscriber) use ($channel) {
+                    $subscriber->notify(new OffBands($channel));
+                });
+            $this->lastNotified = $clearedSubscribers->unique('id')->count();
+        } else {
+            $nextChannel = Channel::firstOrCreate(['id' => $channel->id + 1])->subscribers;
+            $nextChannel->merge($firehoseSubscribers)
+                ->merge($dayFirehoseSubscribers)
+                ->unique('id')
+                ->each(function ($subscriber) use ($channel) {
+                    $subscriber->notify(new NextGroup($channel));
+                });
+            $this->lastNotified = $nextChannel->unique('id')->count();
+        }
+
         $this->updateStatus();
         $this->modal('cleared')->show();
     }
@@ -122,8 +170,12 @@ new class extends Component
         @endif
         <flux:modal :dismissible="false" name="cleared" class="md:w-120 flex flex-col items-center">
             <span class="fas fa-circle-check text-8xl text-green-500"></span>
-            <h2 class="mt-4">Group {{ $lastCleared }} cleared!</h2>
-            <p class="mt-2 mb-4">22 subscribers have been notified.</p>
+            @if ($lastCleared === -1)
+                <h2 class="mt-4">Off-bands declared!</h2>
+            @else
+                <h2 class="mt-4">Group {{ $lastCleared }} cleared!</h2>
+            @endif
+            <p class="mt-2 mb-4">{{ $lastNotified }} text messages have been sent.</p>
             <flux:modal.close>
                 <flux:button type="button" variant="primary">Continue</flux:button>
             </flux:modal.close>

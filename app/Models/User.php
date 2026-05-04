@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Notifications\Notification;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password', 'phone'])]
@@ -34,5 +35,17 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Route notifications for the Vonage channel.
+     */
+    public function routeNotificationForVonage(Notification $notification): string
+    {
+        if (preg_match('/^[+1]([2-9](1[02-9]|[02-9]\d)){2}\d{4}$/', $this->phone_number)) {
+            return preg_replace('/[^0-9]/', '', $this->phone_number);
+        } else {
+            return '1'.preg_replace('/[^0-9]/', '', $this->phone_number);
+        }
     }
 }
