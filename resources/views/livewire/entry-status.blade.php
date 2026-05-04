@@ -306,7 +306,7 @@ new #[Title('Entry Status')] class extends Component
                         <span class="fas fa-check text-4xl mr-4"></span>
                         <div>
                             <p class="text-2xl font-semibold">There's no wait to shop!</p>
-                            <p>Wristbands are no longer required to enter the Plant Sale. Come on in!</p>
+                            <p>Wristbands are not required to enter the Plant Sale for the rest of the day. Come on in!</p>
                         </div>
                     </div>
                 @else
