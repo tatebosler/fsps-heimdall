@@ -71,17 +71,9 @@ new class extends Component {
 
     public function setChannels(): void
     {
-        $current_ps_year = DateHelpers::psYearForDate(now()) * 1000;
-        $standard_channels = Channel::whereBetween('id', [$current_ps_year + 100, $current_ps_year + 800])
-            ->whereNull('cleared_at')
-            ->whereNotNull('distribution_started_at')
-            ->orderBy('id')
-            ->get();
-        $off_bands_channel_id = $current_ps_year + date('N') * 10 + 900;
-        $off_bands_channel = Channel::firstOrCreate(['id' => $off_bands_channel_id]);
+        $current_ps_year = $this->currentPsYear();
 
-        $this->offBandsChannelId = $off_bands_channel_id;
-        $this->availableChannels = $standard_channels->all();
+        $this->refreshAvailableChannels();
 
         if (! $this->user) {
             $this->subscribedChannelIds = [];
@@ -96,6 +88,27 @@ new class extends Component {
                 $this->subscribedChannelIds[] = $channel->id;
             }
         }
+    }
+
+    public function refreshAvailableChannels(): void
+    {
+        $current_ps_year = $this->currentPsYear();
+        $standard_channels = Channel::whereBetween('id', [$current_ps_year + 100, $current_ps_year + 800])
+            ->whereNull('cleared_at')
+            ->whereNotNull('distribution_started_at')
+            ->orderBy('id')
+            ->get();
+        $off_bands_channel_id = $current_ps_year + date('N') * 10 + 900;
+
+        Channel::firstOrCreate(['id' => $off_bands_channel_id]);
+
+        $this->offBandsChannelId = $off_bands_channel_id;
+        $this->availableChannels = $standard_channels->all();
+    }
+
+    private function currentPsYear(): int
+    {
+        return DateHelpers::psYearForDate(now()) * 1000;
     }
 
     public function subscribe(int $channelId): void
@@ -228,7 +241,7 @@ new class extends Component {
                 <form wire:submit="goToNotificationsStage" class="contents">
                     <div class="space-y-2 mb-4">
                         <h1>Enter your cell phone number to get started</h1>
-                        <p>By entering your phone number, you agree to receive automated text messages from Friends School of Minnesota about your wristband group's admission status and estimated entry time.</p>
+                        <p>By entering your phone number, you agree to receive automated text messages from Friends School of Minnesota about your wristband group's admission status and estimated entry time at the Plant Sale.</p>
                         <p>Your phone number will only be used to send you the messages you subscribe to. (For more details, see our <a href="{{ route('privacy') }}" class="text-emerald-500 hover:text-emerald-600 active:text-emerald-700 dark:text-emerald-300 hover:dark:text-emerald-200 active:dark:text-emerald-100">privacy policy</a> and <a href="{{ route('terms') }}" class="text-emerald-500 hover:text-emerald-600 active:text-emerald-700 dark:text-emerald-300 hover:dark:text-emerald-200 active:dark:text-emerald-100">terms of service</a>.) We'll delete your phone number from our records after the sale is over.</p>
                         <p>Please note that we are unable to send text messages to landline phone numbers, mobile numbers located outside the US or Canada, or some virtual numbers.</p>
                         <p>Finally, while the Plant Sale doesn't charge for this service, messaging and data rates from your carrier may apply.</p>
@@ -252,14 +265,14 @@ new class extends Component {
                     <p>Managing texts for: <strong>{{ $this->formattedPhone() }}</strong></p>
                 </div>
                 <div class="flex flex-col items-start sm:flex-row">
-                    <div>
+                    <div class="space-y-1">
                         <h1>Select the notifications you'd like to receive</h1>
                         <p class="text-lg">Don't forget to press <em>Save</em> at the bottom once you're done.</p>
-                        <p>To unsubscribe from all texts, deselect everything you see below and press <em>Save</em>.</p>
+                        <p>To unsubscribe from all texts, deselect everything you see below and press <em>Save</em>, or reply <em>STOP</em> to any text message we send you.</p>
                     </div>
                     <button type="button" wire:click="$refresh" class="ml-auto bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-gray-100 px-4 py-2 rounded text-xl"><span class="fas fa-sync"></span> Refresh</button>
                 </div>
-                <div class="space-y-4" wire:poll="setChannels">
+                <div class="space-y-4" wire:poll="refreshAvailableChannels">
                     @if (in_array($offBandsChannelId, $subscribedChannelIds))
                         <div class="flex items-center gap-2 bg-{{ config('ps.colors.'.date('l')) }}-300 dark:bg-{{ config('ps.colors.'.date('l')) }}-700 p-2 sm:p-4 rounded-xl mt-4 cursor-pointer" wire:click="unsubscribe({{ $offBandsChannelId }})">
                             <span class="text-2xl fas fa-circle-check"></span>

@@ -1,5 +1,7 @@
 <?php
 
+use App\Helpers\DateHelpers;
+use App\Models\Channel;
 use App\Models\User;
 use Livewire\Livewire;
 
@@ -36,4 +38,22 @@ test('notifications stage displays phone number in masked format', function () {
         ->set('phone', '(800) 221-1212')
         ->call('goToNotificationsStage')
         ->assertSee('(800) 221-1212');
+});
+
+test('polling refresh keeps in-progress channel selections', function () {
+    $currentPsYear = DateHelpers::psYearForDate(now()) * 1000;
+    $channelId = $currentPsYear + 101;
+
+    Channel::create([
+        'id' => $channelId,
+        'distribution_started_at' => now(),
+    ]);
+
+    Livewire::test('notification-signup')
+        ->set('phone', '(800) 221-1212')
+        ->call('goToNotificationsStage')
+        ->call('subscribe', $channelId)
+        ->assertSet('subscribedChannelIds', [$channelId])
+        ->call('refreshAvailableChannels')
+        ->assertSet('subscribedChannelIds', [$channelId]);
 });
