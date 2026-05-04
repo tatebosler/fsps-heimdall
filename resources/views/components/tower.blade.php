@@ -8,6 +8,7 @@ use App\Notifications\NextGroup;
 use App\Notifications\OffBands;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 new class extends Component
@@ -27,7 +28,9 @@ new class extends Component
         $psYear = DateHelpers::psYearForDate(now());
         $weekday = date('N');
         $nextToClear = Channel::whereLike('id', "{$psYear}{$weekday}__")->whereNull('cleared_at')->orderBy('id', 'asc')->first();
-        $lastCleared = Channel::whereLike('id', "{$psYear}{$weekday}__")->orWhereLike('id', "{$psYear}9{$weekday}0")->whereNotNull('cleared_at')->orderBy('id', 'desc')->first();
+        $lastCleared = Channel::where(function ($query) use ($psYear, $weekday) {
+            $query->whereLike('id', "{$psYear}{$weekday}__")->orWhereLike('id', "{$psYear}9{$weekday}0");
+        })->whereNotNull('cleared_at')->orderBy('id', 'desc')->first();
 
         if ($nextToClear) {
             $this->nextGroup = ($nextToClear->id % 100);

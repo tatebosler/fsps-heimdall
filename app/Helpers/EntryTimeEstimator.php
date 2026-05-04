@@ -6,6 +6,7 @@ use App\Models\Channel;
 use App\Models\Estimate;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class EntryTimeEstimator
 {
@@ -13,7 +14,7 @@ class EntryTimeEstimator
     {
         $psYear = DateHelpers::psYearForDate(now());
         $weekday = date('N');
-        $channels = Channel::whereLike('id', "{$psYear}{$weekday}__")->whereNotNull('distribution_started_at')->orderBy('id', 'asc')->get();
+        $channels = Channel::whereLike('id', "{$psYear}{$weekday}__")->orderBy('id', 'asc')->get();
         [$pendingChannels, $clearedChannels] = $channels->partition(fn ($channel) => $channel->cleared_at === null);
 
         $clearRate = 60 * (config('ps.historical_clear_rates')[date('l')] ?? 7.5);
@@ -38,6 +39,7 @@ class EntryTimeEstimator
         }
         $firstGroupOfToday = (int) !array_key_exists(date('l'), config('ps.group_zero'));
         foreach ($pendingChannels as $channel) {
+            Log::info("Estimating entry time for channel {$channel->id}");
             if ($channel->id % 100 === $firstGroupOfToday) {
                 $estimatedEntryAt = $lastCleared->copy();
             } else {

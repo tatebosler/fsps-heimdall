@@ -253,7 +253,6 @@ new class extends Component {
                         <h1>Select the notifications you'd like to receive</h1>
                         <p class="text-lg">Don't forget to press <em>Save</em> at the bottom once you're done.</p>
                         <p>To unsubscribe from all texts, deselect everything you see below and press <em>Save</em>.</p>
-                        <p>Not seeing your wristband group? You can sign up for notifications for any wristband group that's waiting to enter.</p>
                     </div>
                     <button type="button" wire:click="$refresh" class="ml-auto bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-gray-100 px-4 py-2 rounded text-xl"><span class="fas fa-sync"></span> Refresh</button>
                 </div>

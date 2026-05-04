@@ -52,8 +52,6 @@ new class extends Component
             $channel->update(['distribution_started_at' => $now]);
         }
 
-        EntryTimeEstimator::estimateEntryTimes();
-
         $todayConfig = config('ps.group_zero');
         if (array_key_exists(date('l'), $todayConfig) and $this->nextGroup === 1) {
             $groupZeroChannelId = sprintf('%s%s%02d', $psYear, $weekday, 0);
@@ -63,6 +61,8 @@ new class extends Component
                 $groupZeroChannel->update(['distribution_started_at' => $now]);
             }
         }
+
+        EntryTimeEstimator::estimateEntryTimes();
 
         Cache::set('entry-distributing', $this->nextGroup ?? 1);
         if (! $this->nextGroup) {
