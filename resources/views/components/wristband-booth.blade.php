@@ -58,11 +58,12 @@ new class extends Component
             $this->nextGroup++;
         }
         $this->lastDistributedAt = $now;
+        $this->modal('distribution-started')->show();
     }
 };
 ?>
 
-<div class="p-4 s:px-8 space-y-4">
+<div class="p-4 sm:px-8 space-y-4">
     <h1>Wristband Booth Dashboard</h1>
 
     <livewire:entry-status hide-actions />
@@ -76,5 +77,13 @@ new class extends Component
                 <p>Group {{ $nextGroup - 1 }} distribution started {{ $lastDistributedAt->diffForHumans() }}</p>
             </div>
         @endif
+        <flux:modal :dismissible="false" name="distribution-started" class="md:w-120 flex flex-col items-center">
+            <span class="fas fa-circle-check text-8xl text-green-500"></span>
+            <h2 class="mt-4">Distribution started for group {{ $nextGroup - 1 }}</h2>
+            <p class="mt-2 mb-4">Estimated entry time: <strong>10:30 AM</strong> (in 2 hours)</p>
+            <flux:modal.close>
+                <flux:button type="button" variant="primary">Continue</flux:button>
+            </flux:modal.close>
+        </flux:modal>
     </div>
 </div>

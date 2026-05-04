@@ -4,6 +4,7 @@ use App\Helpers\DateHelpers;
 use App\Models\Channel;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 new class extends Component {
@@ -158,6 +159,21 @@ new class extends Component {
         $this->channelCode = '';
         $this->modal('channel-code')->close();
     }
+
+    #[Computed]
+    public function specialChannelIds(): array
+    {
+        $current_ps_year = DateHelpers::psYearForDate(now()) * 1000;
+
+        $specialChannelIds = array_filter(
+            $this->subscribedChannelIds,
+            fn (int $id): bool => ($id % 1000 >= 900 && ($id % 100 > 90 || $id % 10 < 9)) && (int) floor($id / 1000) * 1000 === $current_ps_year,
+        );
+
+        sort($specialChannelIds, SORT_NUMERIC);
+
+        return array_values($specialChannelIds);
+    }
 };
 ?>
 
@@ -273,12 +289,14 @@ new class extends Component {
                         <span class="text-xl">I have a Channel Code</span>
                     </div>
                 </flux:modal.trigger>
-                @foreach (array_filter($subscribedChannelIds, fn($id) => ($id % 1000 >= 900 and ($id % 100 > 90 or $id % 10 < 9))) as $channelId)
-                    <div class="flex items-center gap-2 bg-{{ config('ps.colors.'.date('l')) }}-300 dark:bg-{{ config('ps.colors.'.date('l')) }}-700 p-2 sm:p-4 rounded-xl mt-4 cursor-pointer" wire:click="unsubscribe({{ $channelId }})">
-                        <span class="text-2xl fas fa-circle-check"></span>
-                        <span class="text-xl">{{ Channel::find($channelId)->getDescription() }}</span>
-                    </div>
-                @endforeach
+                <div class="space-y-4">
+                    @foreach ($this->specialChannelIds as $channelId)
+                        <div class="flex items-center gap-2 bg-{{ config('ps.colors.'.date('l')) }}-300 dark:bg-{{ config('ps.colors.'.date('l')) }}-700 p-2 sm:p-4 rounded-xl cursor-pointer" wire:click="unsubscribe({{ $channelId }})">
+                            <span class="text-2xl fas fa-circle-check"></span>
+                            <span class="text-xl">{{ Channel::find($channelId)->getDescription() }}</span>
+                        </div>
+                    @endforeach
+                </div>
                 <div class="mt-auto pb-4 sm:pb-8">
                     <div class="mt-4 sm:mt-8 gap-4 sm:gap-8 flex items-center">
                         <button type="button" class="bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-gray-100 px-4 py-2 rounded text-xl min-w-32" wire:click="$set('stage', 'phone')"><span class="fas fa-arrow-left"></span> Back</button>
