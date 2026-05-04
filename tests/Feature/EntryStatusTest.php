@@ -47,3 +47,17 @@ test('closed status still shows starting shortly message for up to fifteen minut
         ->assertSee('Wristband distribution beginning shortly...')
         ->assertDontSee('Days');
 });
+
+test('closed status can hide footer action links', function () {
+    Carbon::setTestNow(Carbon::create(2026, 5, 3, 12, 0, 0));
+
+    Livewire::test('entry-status', ['hideActions' => true])
+        ->assertDontSee('Full hours')
+        ->assertDontSee('Arrival & parking info')
+        ->assertDontSee('Accessible arrival & parking info');
+
+    Livewire::test('entry-status')
+        ->assertSee('Full hours')
+        ->assertSee('Arrival & parking info')
+        ->assertSee('Accessible arrival & parking info');
+});

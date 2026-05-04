@@ -15,8 +15,11 @@ new #[Title('Entry Status')] class extends Component
 
     public ?int $newtMinutes = null;
 
-    public function mount(): void
+    public bool $hideActions = false;
+
+    public function mount(bool $hideActions = false): void
     {
+        $this->hideActions = $hideActions;
         $this->loadStatus();
     }
 
@@ -278,11 +281,13 @@ new #[Title('Entry Status')] class extends Component
                     </div>
                 @endif
 
-                <div class="mt-4 flex w-full flex-col gap-2 text-base">
-                    <a href="https://www.friendsschoolplantsale.com/doing-sale" class="block w-full rounded-2xl bg-gray-200 px-3 py-2 text-gray-800 hover:bg-gray-100 active:bg-gray-50"><span class="fas fa-clock"></span> Full hours</a>
-                    <a href="https://www.friendsschoolplantsale.com/driving" class="block w-full rounded-2xl bg-gray-200 px-3 py-2 text-gray-800 hover:bg-gray-100 active:bg-gray-50"><span class="fas fa-parking"></span> Arrival &amp; parking info</a>
-                    <a href="https://www.friendsschoolplantsale.com/accessibility" class="block w-full rounded-2xl bg-blue-200 px-3 py-2 text-blue-800 hover:bg-blue-100 active:bg-blue-50"><span class="fab fa-accessible-icon"></span> Accessible arrival &amp; parking info</a>
-                </div>
+                @unless ($this->hideActions)
+                    <div class="mt-4 flex w-full flex-col gap-2 text-base">
+                        <a href="https://www.friendsschoolplantsale.com/doing-sale" class="block w-full rounded-2xl bg-gray-200 px-3 py-2 text-gray-800 hover:bg-gray-100 active:bg-gray-50"><span class="fas fa-clock"></span> Full hours</a>
+                        <a href="https://www.friendsschoolplantsale.com/driving" class="block w-full rounded-2xl bg-gray-200 px-3 py-2 text-gray-800 hover:bg-gray-100 active:bg-gray-50"><span class="fas fa-parking"></span> Arrival &amp; parking info</a>
+                        <a href="https://www.friendsschoolplantsale.com/accessibility" class="block w-full rounded-2xl bg-blue-200 px-3 py-2 text-blue-800 hover:bg-blue-100 active:bg-blue-50"><span class="fab fa-accessible-icon"></span> Accessible arrival &amp; parking info</a>
+                    </div>
+                @endunless
             </div>
         @break
 
