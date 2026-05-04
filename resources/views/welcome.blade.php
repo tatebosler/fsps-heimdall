@@ -19,14 +19,14 @@
             <p class="mt-1 sm:mt-2 text-lg">Use these tools to help make your entry and shopping experience seamless and enjoyable.</p>
         </div>
         <div class="grid lg:ml-auto gap-1 sm:gap-2 sm:grid-cols-2 lg:grid-cols-1 lg:w-2/5">
-            <a href="/notifications" class="dark:bg-{{ config('ps.colors.' . date('l')) }}-800 hover:dark:bg-{{ config('ps.colors.' . date('l')) }}-700 active:dark:bg-{{ config('ps.colors.' . date('l')) }}-600 bg-{{ config('ps.colors.' . date('l')) }}-300 hover:bg-{{ config('ps.colors.' . date('l')) }}-200 active:bg-{{ config('ps.colors.' . date('l')) }}-100 px-3 py-2 rounded-xl w-full block">
+            <a href="{{ route('notifications') }}" class="dark:bg-{{ config('ps.colors.' . date('l')) }}-800 hover:dark:bg-{{ config('ps.colors.' . date('l')) }}-700 active:dark:bg-{{ config('ps.colors.' . date('l')) }}-600 bg-{{ config('ps.colors.' . date('l')) }}-300 hover:bg-{{ config('ps.colors.' . date('l')) }}-200 active:bg-{{ config('ps.colors.' . date('l')) }}-100 px-3 py-2 rounded-xl w-full block">
                 <p class="text-xl font-bold">Sign up for text messages</p>
                 <p class="text-sm">and get notified when it's your turn to shop, or when there's no wait to get in for the rest of the day.</p>
             </a>
-            <a href="/estimates" class="dark:bg-{{ config('ps.colors.' . date('l')) }}-800 hover:dark:bg-{{ config('ps.colors.' . date('l')) }}-700 active:dark:bg-{{ config('ps.colors.' . date('l')) }}-600 bg-{{ config('ps.colors.' . date('l')) }}-300 hover:bg-{{ config('ps.colors.' . date('l')) }}-200 active:bg-{{ config('ps.colors.' . date('l')) }}-100 px-3 py-2 rounded-xl w-full flex items-center">
+            <a href="{{ route('estimates') }}" class="dark:bg-{{ config('ps.colors.' . date('l')) }}-800 hover:dark:bg-{{ config('ps.colors.' . date('l')) }}-700 active:dark:bg-{{ config('ps.colors.' . date('l')) }}-600 bg-{{ config('ps.colors.' . date('l')) }}-300 hover:bg-{{ config('ps.colors.' . date('l')) }}-200 active:bg-{{ config('ps.colors.' . date('l')) }}-100 px-3 py-2 rounded-xl w-full flex items-center">
                 <p class="text-xl font-bold">Check estimated entry times</p>
             </a>
-            <a href="/notifications" class="dark:bg-gray-800 hover:dark:bg-gray-900 active:dark:bg-gray-950 bg-gray-200 hover:bg-gray-100 active:bg-gray-50 px-3 py-2 rounded-xl w-full block">
+            <a href="{{ route('notifications') }}" class="dark:bg-gray-800 hover:dark:bg-gray-900 active:dark:bg-gray-950 bg-gray-200 hover:bg-gray-100 active:bg-gray-50 px-3 py-2 rounded-xl w-full block">
                 <p>Update/cancel your notifications</p>
             </a>
             <a href="https://www.friendsschoolplantsale.com/doing-sale" class="dark:bg-gray-800 hover:dark:bg-gray-900 active:dark:bg-gray-950 bg-gray-200 hover:bg-gray-100 active:bg-gray-50 px-3 py-2 rounded-xl w-full block">

@@ -14,6 +14,8 @@
 
 @source inline("{hover:,active:,focus:,}bg-{purple,orange,blue,rose,yellow,cyan,lime}-{100..400..100}");
 @source inline("{hover:,active:,focus:,}dark:bg-{purple,orange,blue,rose,yellow,cyan,lime}-{600..900..100}");
+@source inline("dark:bg-{purple,orange,blue,rose,yellow,cyan,lime}-950");
+@source inline("bg-{purple,orange,blue,rose,yellow,cyan,lime}-50");
 @source inline("{dark:,}text-{purple,orange,blue,rose,yellow,cyan,lime}-{50,500,950}");
 
 @layer utilities {

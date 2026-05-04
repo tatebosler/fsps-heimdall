@@ -48,7 +48,7 @@ new #[Title('Entry Status')] class extends Component
     {
         $zeroGroupDays = config('ps.group_zero', []);
 
-        return in_array(now()->dayOfWeek, $zeroGroupDays) ? 0 : 1;
+        return array_key_exists(now()->dayName, $zeroGroupDays) ? 0 : 1;
     }
 
     #[Computed]

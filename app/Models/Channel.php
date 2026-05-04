@@ -36,9 +36,7 @@ class Channel extends Model
 
     public function isSpecial(): bool
     {
-        $third_from_end_digit = floor($this->id / 100) % 10;
-
-        return $third_from_end_digit === 9;
+        return $this->id % 1000 >= 900;
     }
 
     public function getPsYear(): int

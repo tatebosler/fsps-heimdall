@@ -36,7 +36,7 @@ class EntryTimeEstimator
         if (! $lastCleared) {
             $lastCleared = DateHelpers::psDayForCalendarYear(date('Y'), date('N'))->setTimeFromTimeString(config('ps.hours.'.date('l').'.open'));
         }
-        $firstGroupOfToday = (int) !in_array(date('l'), config('ps.group_zero'));
+        $firstGroupOfToday = (int) !array_key_exists(date('l'), config('ps.group_zero'));
         foreach ($pendingChannels as $channel) {
             if ($channel->id % 100 === $firstGroupOfToday) {
                 $estimatedEntryAt = $lastCleared->copy();
@@ -90,7 +90,7 @@ class EntryTimeEstimator
             $lastClearedGroup = $lastClearedChannel->id % 100;
         } else {
             $lastCleared = DateHelpers::psDayForCalendarYear(date('Y'), date('N'))->setTimeFromTimeString(config('ps.hours.'.date('l').'.open'));
-            $lastClearedGroup = (int) !in_array(date('l'), config('ps.group_zero'));
+            $lastClearedGroup = (int) !array_key_exists(date('l'), config('ps.group_zero'));
         }
 
         return $lastCleared->copy()->addSeconds($clearRate * ($group - $lastClearedGroup));
@@ -100,7 +100,7 @@ class EntryTimeEstimator
     {
         $weekday = DateHelpers::dayNumberToString($day);
         $psYear = DateHelpers::psYearForDate(now());
-        $clearedChannels = Channel::whereLike('id', "{$psYear}{$day}__")->whereNotNull('cleared_at')->orderBy('id', 'asc')->get();
+        [$pendingChannels, $clearedChannels] = Channel::whereLike('id', "{$psYear}{$day}__")->orderBy('id', 'asc')->get()->partition(fn ($channel) => $channel->cleared_at === null);
         $historicalMax = config('ps.historical_group_counts')[$weekday] ?? 0;
         $lastClearedChannel = $clearedChannels->last();
 
@@ -121,20 +121,33 @@ class EntryTimeEstimator
         }
 
         $lastClearedChannel = $clearedChannels->last();
-        if ($lastClearedChannel) {
+        $lastPendingChannel = $pendingChannels->last();
+        if ($clearedChannels->count()) {
             $lastCleared = $lastClearedChannel->cleared_at;
             $lastClearedGroup = $lastClearedChannel->id % 100;
+            $startGroup = $lastClearedGroup + 1;
         } else {
             $lastCleared = DateHelpers::psDayForCalendarYear(date('Y'), $day)->setTimeFromTimeString(config('ps.hours.'.$weekday.'.open'));
-            $lastClearedGroup = (int) !in_array($weekday, config('ps.group_zero'));
-        }
-
-        $startGroup = $lastClearedGroup;
-        while ($startGroup % 5 !== 0 or $startGroup === 0) {
-            $startGroup++;
+            $lastClearedGroup = (int) !array_key_exists($weekday, config('ps.group_zero'));
+            if ($lastPendingChannel) {
+                $startGroup = ($lastPendingChannel->id % 100) + 1;
+            } else {
+                $startGroup = $lastClearedGroup;
+            }
         }
 
         $returnTimes = [];
+
+        if ($startGroup === (int) !array_key_exists($weekday, config('ps.group_zero'))) {
+            $returnTimes[] = [
+                'group' => $startGroup,
+                'estimated_entry_at' => $lastCleared->copy(),
+            ];
+        }
+
+        while ($startGroup % 5 !== 0 or $startGroup === 0) {
+            $startGroup++;
+        }
         for ($group = $startGroup; $group <= $historicalMax; $group += 5) {
             $returnTimes[] = [
                 'group' => $group,

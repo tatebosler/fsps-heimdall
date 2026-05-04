@@ -25,7 +25,7 @@ new class extends Component
             Cache::set('entry-distributing', $this->nextGroup - 1);
         } else {
             $todayConfig = config('ps.group_zero');
-            $this->nextGroup = (int) !in_array(date('l'), $todayConfig);
+            $this->nextGroup = (int) !array_key_exists(date('l'), $todayConfig);
             Cache::forget('entry-distributing');
         }
     }
@@ -46,7 +46,7 @@ new class extends Component
         EntryTimeEstimator::estimateEntryTimes();
 
         $todayConfig = config('ps.group_zero');
-        if (in_array(date('l'), $todayConfig) and $this->nextGroup === 1) {
+        if (array_key_exists(date('l'), $todayConfig) and $this->nextGroup === 1) {
             $groupZeroChannelId = sprintf('%s%s%02d', $psYear, $weekday, 0);
             $groupZeroChannel = Channel::firstOrCreate(['id' => $groupZeroChannelId]);
 
@@ -92,4 +92,6 @@ new class extends Component
             </flux:modal.close>
         </flux:modal>
     </div>
+
+    <livewire:status-board show-original-estimates />
 </div>
