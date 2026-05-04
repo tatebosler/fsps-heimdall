@@ -69,7 +69,7 @@ new class extends Component {
         return $this->phoneDigits() === '' || ! $this->isPhoneNanpValid();
     }
 
-    private function setChannels(): void
+    public function setChannels(): void
     {
         $current_ps_year = DateHelpers::psYearForDate(now()) * 1000;
         $standard_channels = Channel::whereBetween('id', [$current_ps_year + 100, $current_ps_year + 800])
@@ -98,7 +98,7 @@ new class extends Component {
     public function subscribe(int $channelId): void
     {
         $current_ps_year = DateHelpers::psYearForDate(now()) * 1000;
-        if ($channelId % 1000 < 100 || ($channelId % 1000 >= 900 && $channelId % 10 < 9) || (int) floor($channelId / 1000) * 1000 !== $current_ps_year) {
+        if ($channelId % 1000 < 100 || ($channelId % 1000 >= 900 && $channelId % 10 > 0) || (int) floor($channelId / 1000) * 1000 !== $current_ps_year) {
             return;
         }
         if (!in_array($channelId, $this->subscribedChannelIds)) {
@@ -253,43 +253,47 @@ new class extends Component {
                         <h1>Select the notifications you'd like to receive</h1>
                         <p class="text-lg">Don't forget to press <em>Save</em> at the bottom once you're done.</p>
                         <p>To unsubscribe from all texts, deselect everything you see below and press <em>Save</em>.</p>
+                        <p>Not seeing your wristband group? You can sign up for notifications for any wristband group that's waiting to enter.</p>
                     </div>
                     <button type="button" wire:click="$refresh" class="ml-auto bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-gray-100 px-4 py-2 rounded text-xl"><span class="fas fa-sync"></span> Refresh</button>
                 </div>
+                <div class="space-y-4" wire:poll="setChannels">
+                    @if (in_array($offBandsChannelId, $subscribedChannelIds))
+                        <div class="flex items-center gap-2 bg-{{ config('ps.colors.'.date('l')) }}-300 dark:bg-{{ config('ps.colors.'.date('l')) }}-700 p-2 sm:p-4 rounded-xl mt-4 cursor-pointer" wire:click="unsubscribe({{ $offBandsChannelId }})">
+                            <span class="text-2xl fas fa-circle-check"></span>
+                            <span class="text-xl">Text me when wristbands are no longer required for today</span>
+                        </div>
+                    @else
+                        <div class="flex items-center gap-2 bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl mt-4 cursor-pointer" wire:click="subscribe({{ $offBandsChannelId }})">
+                            <span class="text-2xl far fa-circle"></span>
+                            <span class="text-xl">Text me when wristbands are no longer required for today</span>
+                        </div>
+                    @endif
 
-                @if (in_array($offBandsChannelId, $subscribedChannelIds))
-                    <div class="flex items-center gap-2 bg-{{ config('ps.colors.'.date('l')) }}-300 dark:bg-{{ config('ps.colors.'.date('l')) }}-700 p-2 sm:p-4 rounded-xl mt-4 cursor-pointer" wire:click="unsubscribe({{ $offBandsChannelId }})">
-                        <span class="text-2xl fas fa-circle-check"></span>
-                        <span class="text-xl">Text me when wristbands are no longer required for today</span>
-                    </div>
-                @else
-                    <div class="flex items-center gap-2 bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl mt-4 cursor-pointer" wire:click="subscribe({{ $offBandsChannelId }})">
-                        <span class="text-2xl far fa-circle"></span>
-                        <span class="text-xl">Text me when wristbands are no longer required for today</span>
-                    </div>
-                @endif
-
-                @if (count($availableChannels))
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 my-4">
-                        @foreach ($availableChannels as $channel)
-                            <div class="flex items-center gap-2 rounded-xl cursor-pointer bg-{{ in_array($channel->id, $subscribedChannelIds) ? config('ps.colors.'.date('l')) : 'gray' }}-300 dark:bg-{{ in_array($channel->id, $subscribedChannelIds) ? config('ps.colors.'.date('l')) : 'gray' }}-700 p-2 sm:p-4" wire:click="toggleSubscription({{ $channel->id }})">
-                                <span class="text-2xl {{ in_array($channel->id, $subscribedChannelIds) ? 'fas fa-circle-check' : 'far fa-circle' }}"></span>
-                                <div>
-                                    <p class="text-xl">Group <span class="font-black">{{ $channel->id % 100 }}</span></p>
-                                    <p class="text-sm">Estimated entry time {{ optional($channel->estimatedEntryTime)->format('g:i A') }}</p>
+                    @if (count($availableChannels))
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            @foreach ($availableChannels as $channel)
+                                <div class="flex items-center gap-2 rounded-xl cursor-pointer bg-{{ in_array($channel->id, $subscribedChannelIds) ? config('ps.colors.'.date('l')) : 'gray' }}-300 dark:bg-{{ in_array($channel->id, $subscribedChannelIds) ? config('ps.colors.'.date('l')) : 'gray' }}-700 p-2 sm:p-4" wire:click="toggleSubscription({{ $channel->id }})">
+                                    <span class="text-2xl {{ in_array($channel->id, $subscribedChannelIds) ? 'fas fa-circle-check' : 'far fa-circle' }}"></span>
+                                    <div>
+                                        <p class="text-xl">Group <span class="font-black">{{ $channel->id % 100 }}</span></p>
+                                        <p class="text-sm">Estimated entry time {{ optional($channel->estimated_entry_at)->format('g:i A') }}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                @endif
-                <flux:modal.trigger name="channel-code">
-                    <div class="flex items-center gap-2 bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl cursor-pointer mb-4">
-                        <span class="text-2xl fas fa-bullhorn"></span>
-                        <span class="text-xl">I have a Channel Code</span>
-                    </div>
-                </flux:modal.trigger>
-                <div class="space-y-4">
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl sm:text-xl mb-4 text-center">
+                            <p>There are no active wristband groups at the moment.</p>
+                            <p>You can sign up for wristband-specific notificaitons once wristbands are distributed. If you're not seeing your wristband group, press <em>Refresh</em> in the upper right corner to check again.</p>
+                        </div>
+                    @endif
+                    <flux:modal.trigger name="channel-code">
+                        <div class="flex items-center gap-2 bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl cursor-pointer mb-4">
+                            <span class="text-2xl fas fa-bullhorn"></span>
+                            <span class="text-xl">I have a Channel Code</span>
+                        </div>
+                    </flux:modal.trigger>
                     @foreach ($this->specialChannelIds as $channelId)
                         <div class="flex items-center gap-2 bg-{{ config('ps.colors.'.date('l')) }}-300 dark:bg-{{ config('ps.colors.'.date('l')) }}-700 p-2 sm:p-4 rounded-xl cursor-pointer" wire:click="unsubscribe({{ $channelId }})">
                             <span class="text-2xl fas fa-circle-check"></span>
