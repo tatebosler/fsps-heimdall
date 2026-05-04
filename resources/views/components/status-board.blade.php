@@ -3,6 +3,7 @@
 use App\Helpers\DateHelpers;
 use App\Helpers\EntryTimeEstimator;
 use App\Models\Channel;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 new class extends Component
@@ -28,7 +29,7 @@ new class extends Component
     {
         $psYear = DateHelpers::psYearForDate(now());
         $weekday = DateHelpers::dayStringToNumber($this->date);
-        $channels = Channel::whereLike('id', "{$psYear}{$weekday}__")->get();
+        $channels = Channel::whereLike('id', "{$psYear}{$weekday}__")->whereNotNull('distribution_started_at')->get();
         $offBands = Channel::whereLike('id', "{$psYear}9{$weekday}0")->first();
         if ($offBands and $offBands->cleared_at !== null) {
             $channels->push($offBands);

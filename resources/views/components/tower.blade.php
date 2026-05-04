@@ -105,14 +105,19 @@ new class extends Component
                     $subscriber->notify(new GroupCleared($channel));
                 });
 
-            $nextChannel = Channel::firstOrCreate(['id' => $channel->id + 1])->subscribers;
-            $nextChannel->merge($firehoseSubscribers)
-                ->merge($dayFirehoseSubscribers)
-                ->unique('id')
-                ->each(function ($subscriber) use ($channel) {
-                    $subscriber->notify(new NextGroup($channel));
-                });
-            $this->lastNotified = $clearedSubscribers->unique('id')->count() + $nextChannel->unique('id')->count();
+            $nextChannel = Channel::find($channel->id + 1);
+            if ($nextChannel) {
+                $subscribers = $nextChannel->subscribers;
+                $subscribers->merge($firehoseSubscribers)
+                    ->merge($dayFirehoseSubscribers)
+                    ->unique('id')
+                    ->each(function ($subscriber) use ($channel) {
+                        $subscriber->notify(new NextGroup($channel));
+                    });
+                $this->lastNotified = $clearedSubscribers->unique('id')->count() + $subscribers->unique('id')->count();
+            } else {
+                $this->lastNotified = $clearedSubscribers->unique('id')->count();
+            }
         } else if ($channel->isSpecial()) {
             $clearedSubscribers = $channel->subscribers;
             $clearedSubscribers->merge($firehoseSubscribers)
@@ -123,14 +128,19 @@ new class extends Component
                 });
             $this->lastNotified = $clearedSubscribers->unique('id')->count();
         } else {
-            $nextChannel = Channel::firstOrCreate(['id' => $channel->id + 1])->subscribers;
-            $nextChannel->merge($firehoseSubscribers)
-                ->merge($dayFirehoseSubscribers)
-                ->unique('id')
-                ->each(function ($subscriber) use ($channel) {
-                    $subscriber->notify(new NextGroup($channel));
-                });
-            $this->lastNotified = $nextChannel->unique('id')->count();
+            $nextChannel = Channel::find($channel->id + 1);
+            if ($nextChannel) {
+                $subscribers = $nextChannel->subscribers;
+                $subscribers->merge($firehoseSubscribers)
+                    ->merge($dayFirehoseSubscribers)
+                    ->unique('id')
+                    ->each(function ($subscriber) use ($channel) {
+                        $subscriber->notify(new NextGroup($channel));
+                    });
+                $this->lastNotified = $subscribers->unique('id')->count();
+            } else {
+                $this->lastNotified = 0;
+            }
         }
 
         $this->updateStatus();
