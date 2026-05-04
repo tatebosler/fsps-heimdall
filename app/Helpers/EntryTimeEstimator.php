@@ -136,6 +136,8 @@ class EntryTimeEstimator
             $lastCleared = $lastClearedChannel->cleared_at;
             $lastClearedGroup = $lastClearedChannel->id % 100;
             $startGroup = $lastClearedGroup + 1;
+        } else if (!array_key_exists($weekday, config('ps.hours'))) {
+            return [];
         } else {
             $lastCleared = DateHelpers::psDayForCalendarYear(date('Y'), $day)->setTimeFromTimeString(config('ps.hours.'.$weekday.'.open'));
             $lastClearedGroup = (int) !array_key_exists($weekday, config('ps.group_zero'));
