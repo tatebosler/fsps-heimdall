@@ -232,8 +232,12 @@ new class extends Component {
                 <div class="bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl sm:text-xl mb-4">
                     <p>Managing texts for: <strong>{{ $this->formattedPhone() }}</strong></p>
                 </div>
-                <div class="flex flex-col sm:flex-row">
-                    <h1>Select the notifications you'd like to receive</h1>
+                <div class="flex flex-col items-start sm:flex-row">
+                    <div>
+                        <h1>Select the notifications you'd like to receive</h1>
+                        <p class="text-lg">Don't forget to press <em>Save</em> at the bottom once you're done.</p>
+                        <p>To unsubscribe from all texts, deselect everything you see below and press <em>Save</em>.</p>
+                    </div>
                     <button type="button" wire:click="$refresh" class="ml-auto bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-gray-100 px-4 py-2 rounded text-xl"><span class="fas fa-sync"></span> Refresh</button>
                 </div>
 
@@ -264,7 +268,7 @@ new class extends Component {
                 @else
                 @endif
                 <flux:modal.trigger name="channel-code">
-                    <div class="flex items-center gap-2 bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl mt-4 cursor-pointer my-4">
+                    <div class="flex items-center gap-2 bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl cursor-pointer mb-4">
                         <span class="text-2xl fas fa-bullhorn"></span>
                         <span class="text-xl">I have a Channel Code</span>
                     </div>
