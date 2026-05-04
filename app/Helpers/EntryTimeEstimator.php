@@ -35,7 +35,12 @@ class EntryTimeEstimator
 
         $lastCleared = $clearedChannels->last()?->cleared_at;
         if (! $lastCleared) {
-            $lastCleared = DateHelpers::psDayForCalendarYear(date('Y'), date('N'))->setTimeFromTimeString(config('ps.hours.'.date('l').'.open'));
+            if (array_key_exists(date('l'), config('ps.hours'))) {
+                $lastCleared = DateHelpers::psDayForCalendarYear(date('Y'), date('N'))->setTimeFromTimeString(config('ps.hours.'.date('l').'.open'));
+            } else {
+                $lastCleared = Carbon::now();
+                $lastCleared->setTime(9, 0, 0);
+            }
         }
         $firstGroupOfToday = (int) !array_key_exists(date('l'), config('ps.group_zero'));
         foreach ($pendingChannels as $channel) {
