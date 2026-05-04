@@ -11,6 +11,7 @@ use Livewire\Component;
 new #[Title('Entry Texting System')] class extends Component {
     public $stage = 'phone';
     public $phone = '';
+    public bool $consentToTexts = false;
     public $channelCode = '';
 
     public ?User $user = null;
@@ -67,7 +68,7 @@ new #[Title('Entry Texting System')] class extends Component {
 
     public function isPhoneStageNextDisabled(): bool
     {
-        return $this->phoneDigits() === '' || ! $this->isPhoneNanpValid();
+        return $this->phoneDigits() === '' || ! $this->isPhoneNanpValid() || ! $this->consentToTexts;
     }
 
     public function setChannels(): void
@@ -251,6 +252,10 @@ new #[Title('Entry Texting System')] class extends Component {
                     @if ($hasPhoneNanpError)
                         <p class="mt-2 text-sm text-red-600 dark:text-red-400">Please enter a valid US or Canada mobile phone number</p>
                     @endif
+                    <label for="consent-to-texts" class="mt-4 flex items-start gap-3 cursor-pointer">
+                        <input id="consent-to-texts" type="checkbox" wire:model.live="consentToTexts" class="mt-1 h-5 w-5 rounded border-gray-400 text-emerald-700 focus:ring-emerald-600" />
+                        <span>Yes, I consent to receiving wristband group/waitlist alert messages about the Friends School Plant Sale from Friends School of Minnesota</span>
+                    </label>
 
                     <div class="mt-auto pb-4 sm:pb-8">
                         <div class="mt-4 sm:mt-8 flex items-center gap-4 sm:gap-8">

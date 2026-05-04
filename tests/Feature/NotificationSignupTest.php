@@ -23,12 +23,15 @@ test('phone stage does not show NANP error for valid NANP number', function () {
         ->assertDontSee('Please enter a valid US or Canada mobile phone number');
 });
 
-test('cannot advance to notifications stage with invalid phone but can with valid phone', function () {
+test('cannot advance to notifications stage with invalid phone or without consent but can with valid phone and consent', function () {
     Livewire::test('notification-signup')
         ->set('phone', '(111) 111-1111')
         ->call('goToNotificationsStage')
         ->assertSet('stage', 'phone')
         ->set('phone', '(800) 221-1212')
+        ->call('goToNotificationsStage')
+        ->assertSet('stage', 'phone')
+        ->set('consentToTexts', true)
         ->call('goToNotificationsStage')
         ->assertSet('stage', 'notifications');
 });
@@ -36,6 +39,7 @@ test('cannot advance to notifications stage with invalid phone but can with vali
 test('notifications stage displays phone number in masked format', function () {
     Livewire::test('notification-signup')
         ->set('phone', '(800) 221-1212')
+        ->set('consentToTexts', true)
         ->call('goToNotificationsStage')
         ->assertSee('(800) 221-1212');
 });
@@ -51,6 +55,7 @@ test('polling refresh keeps in-progress channel selections', function () {
 
     Livewire::test('notification-signup')
         ->set('phone', '(800) 221-1212')
+        ->set('consentToTexts', true)
         ->call('goToNotificationsStage')
         ->call('subscribe', $channelId)
         ->assertSet('subscribedChannelIds', [$channelId])
