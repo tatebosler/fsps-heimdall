@@ -202,38 +202,6 @@ new #[Title('Entry Texting System')] class extends Component {
     </div>
 
     <div class="px-4 sm:px-8 flex-1 flex flex-col">
-        <div class="hidden sm:block mb-8">
-            <flux:timeline horizontal>
-                <flux:timeline.item status="{{ $stage === 'phone' ? 'current' : 'complete' }}">
-                    <flux:timeline.indicator>
-                        <flux:icon.phone variant="micro" />
-                    </flux:timeline.indicator>
-
-                    <flux:timeline.content>
-                        <flux:heading>Enter phone number</flux:heading>
-                    </flux:timeline.content>
-                </flux:timeline.item>
-                <flux:timeline.item status="{{ $stage === 'notifications' ? 'current' : ($stage === 'phone' ? 'incomplete' : 'complete') }}">
-                    <flux:timeline.indicator>
-                        <flux:icon.list-bullet variant="micro" />
-                    </flux:timeline.indicator>
-
-                    <flux:timeline.content>
-                        <flux:heading>Select notifications</flux:heading>
-                    </flux:timeline.content>
-                </flux:timeline.item>
-                <flux:timeline.item status="{{ $stage === 'confirmation' ? 'current' : 'incomplete' }}">
-                    <flux:timeline.indicator>
-                        <flux:icon.check variant="micro" />
-                    </flux:timeline.indicator>
-
-                    <flux:timeline.content>
-                        <flux:heading>Subscription confirmed</flux:heading>
-                    </flux:timeline.content>
-                </flux:timeline.item>
-            </flux:timeline>
-        </div>
-
         @switch ($stage)
             @case('phone')
                 @php
