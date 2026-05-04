@@ -29,7 +29,7 @@ new class extends Component
         $psYear = DateHelpers::psYearForDate(now());
         $weekday = DateHelpers::dayStringToNumber($this->date);
         $channels = Channel::whereLike('id', "{$psYear}{$weekday}__")->get();
-        $offBands = Channel::whereLike('id', "{$psYear}9{$weekday}9")->first();
+        $offBands = Channel::whereLike('id', "{$psYear}9{$weekday}0")->first();
         if ($offBands and $offBands->cleared_at !== null) {
             $channels->push($offBands);
         } else if ($this->includeFutureGroups) {
@@ -77,13 +77,13 @@ new class extends Component
             @forelse ($channels as $channel)
                 <tr wire:key="{{ $channel->id }}">
                     @if ($channel->isSpecial())
-                        <td class="bg-{{ config('ps.colors')[$date] }}-300 text-{{ config('ps.colors')[$date] }}-900 text-3xl sm:text-4xl text-center h-16 font-black">
+                        <td class="dark:bg-{{ config('ps.colors')[$date] }}-600 dark:text-{{ config('ps.colors')[$date] }}-100 text-{{ config('ps.colors')[$date] }}-900 bg-{{ config('ps.colors')[$date] }}-400 text-3xl sm:text-4xl text-center h-16 font-black">
                             ALL
                         </td>
                         <td class="sm:text-xl px-4">Wristbands no longer required effective {{ $channel->cleared_at->format('g:i a') }}</td>
                         <td></td>
                     @elseif ($channel->cleared_at)
-                        <td class="bg-{{ config('ps.colors')[$date] }}-300 text-{{ config('ps.colors')[$date] }}-900 text-3xl sm:text-4xl text-center h-16 font-black">
+                        <td class="dark:bg-{{ config('ps.colors')[$date] }}-600 dark:text-{{ config('ps.colors')[$date] }}-100 text-{{ config('ps.colors')[$date] }}-900 bg-{{ config('ps.colors')[$date] }}-400 text-3xl sm:text-4xl text-center h-16 font-black">
                             {{ $channel->id % 100 }}
                         </td>
                         <td class="sm:text-xl px-4">Admitted at {{ $channel->cleared_at->format('g:i a') }}</td>

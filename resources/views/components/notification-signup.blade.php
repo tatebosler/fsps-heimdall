@@ -72,12 +72,12 @@ new class extends Component {
     private function setChannels(): void
     {
         $current_ps_year = DateHelpers::psYearForDate(now()) * 1000;
-        $standard_channels = Channel::whereBetween('id', [$current_ps_year + 100, $current_ps_year + 799])
+        $standard_channels = Channel::whereBetween('id', [$current_ps_year + 100, $current_ps_year + 800])
             ->whereNull('cleared_at')
             ->whereNotNull('distribution_started_at')
             ->orderBy('id')
             ->get();
-        $off_bands_channel_id = $current_ps_year + date('N') * 10 + 909;
+        $off_bands_channel_id = $current_ps_year + date('N') * 10 + 900;
         $off_bands_channel = Channel::firstOrCreate(['id' => $off_bands_channel_id]);
 
         $this->offBandsChannelId = $off_bands_channel_id;
@@ -167,7 +167,7 @@ new class extends Component {
 
         $specialChannelIds = array_filter(
             $this->subscribedChannelIds,
-            fn (int $id): bool => ($id % 1000 >= 900 && ($id % 100 > 90 || $id % 10 < 9)) && (int) floor($id / 1000) * 1000 === $current_ps_year,
+            fn (int $id): bool => ($id % 1000 >= 900 && ($id % 100 > 90 || $id % 10 > 0)) && (int) floor($id / 1000) * 1000 === $current_ps_year,
         );
 
         sort($specialChannelIds, SORT_NUMERIC);
