@@ -42,10 +42,10 @@ class User extends Authenticatable
      */
     public function routeNotificationForVonage(Notification $notification): string
     {
-        if (preg_match('/^[+1]([2-9](1[02-9]|[02-9]\d)){2}\d{4}$/', $this->phone_number)) {
-            return preg_replace('/[^0-9]/', '', $this->phone_number);
+        if (preg_match('/^[+1]([2-9](1[02-9]|[02-9]\d)){2}\d{4}$/', $this->phone)) {
+            return preg_replace('/[^0-9]/', '', $this->phone);
         } else {
-            return '1'.preg_replace('/[^0-9]/', '', $this->phone_number);
+            return '1'.preg_replace('/[^0-9]/', '', $this->phone);
         }
     }
 }
