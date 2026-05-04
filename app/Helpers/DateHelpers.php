@@ -88,4 +88,32 @@ class DateHelpers
 
         return null;
     }
+
+    public static function dayStringToNumber(string $day): int
+    {
+        return match (strtolower($day)) {
+            'monday' => 1,
+            'tuesday' => 2,
+            'wednesday' => 3,
+            'thursday' => 4,
+            'friday' => 5,
+            'saturday' => 6,
+            'sunday' => 7,
+            default => throw new \InvalidArgumentException("Invalid day string: {$day}"),
+        };
+    }
+
+    public static function dayNumberToString(int $day): string
+    {
+        return match ($day) {
+            1 => 'Monday',
+            2 => 'Tuesday',
+            3 => 'Wednesday',
+            4 => 'Thursday',
+            5 => 'Friday',
+            6 => 'Saturday',
+            7 => 'Sunday',
+            default => throw new \InvalidArgumentException("Invalid day number: {$day}"),
+        };
+    }
 }

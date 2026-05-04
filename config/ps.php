@@ -112,4 +112,18 @@ return [
             'close' => '14:00',
         ],
     ],
+
+    'historical_clear_rates' => [
+        'Thursday' => 10,
+        'Friday' => 7.4,
+        'Saturday' => 6.2,
+        'Sunday' => 4.1,
+    ],
+
+    'historical_group_counts' => [
+        'Thursday' => 5,
+        'Friday' => 50,
+        'Saturday' => 30,
+        'Sunday' => 15,
+    ],
 ];

@@ -1,6 +1,7 @@
 <?php
 
 use App\Helpers\DateHelpers;
+use App\Helpers\EntryTimeEstimator;
 use App\Models\Channel;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -10,6 +11,7 @@ new class extends Component
 {
     public int $nextGroup = 0;
     public ?Carbon $lastDistributedAt = null;
+    public ?Carbon $estimatedEntryTime = null;
 
     public function mount()
     {
@@ -41,6 +43,8 @@ new class extends Component
             $channel->update(['distribution_started_at' => $now]);
         }
 
+        EntryTimeEstimator::estimateEntryTimes();
+
         $todayConfig = config('ps.group_zero');
         if (in_array(date('l'), $todayConfig) and $this->nextGroup === 1) {
             $groupZeroChannelId = sprintf('%s%s%02d', $psYear, $weekday, 0);
@@ -58,6 +62,8 @@ new class extends Component
             $this->nextGroup++;
         }
         $this->lastDistributedAt = $now;
+        $channel->refresh();
+        $this->estimatedEntryTime = $channel->estimated_entry_at;
         $this->modal('distribution-started')->show();
     }
 };
@@ -80,7 +86,7 @@ new class extends Component
         <flux:modal :dismissible="false" name="distribution-started" class="md:w-120 flex flex-col items-center">
             <span class="fas fa-circle-check text-8xl text-green-500"></span>
             <h2 class="mt-4">Distribution started for group {{ $nextGroup - 1 }}</h2>
-            <p class="mt-2 mb-4">Estimated entry time: <strong>10:30 AM</strong> (in 2 hours)</p>
+            <p class="mt-2 mb-4">Estimated entry time: <strong>{{ optional($estimatedEntryTime)->format('g:i A') }}</strong> ({{ optional($estimatedEntryTime)->diffForHumans() }})</p>
             <flux:modal.close>
                 <flux:button type="button" variant="primary">Continue</flux:button>
             </flux:modal.close>
