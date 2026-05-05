@@ -3,6 +3,8 @@
 return [
     'year_zero' => 1989,
 
+    'admin_tools_password' => env('ADMIN_TOOLS_PASSWORD'),
+
     'colors' => [
         'Monday' => 'rose',
         'Tuesday' => 'blue',

@@ -73,6 +73,13 @@
                     Sync Serial Numbers
                 </flux:sidebar.item>
             </flux:sidebar.group>
+
+            <form method="POST" action="{{ route('admin.logout') }}" class="mt-4 px-3">
+                @csrf
+                <flux:button type="submit" variant="ghost" icon="lock-closed" class="w-full justify-start">
+                    Lock tools
+                </flux:button>
+            </form>
         </flux:sidebar.nav>
     </flux:sidebar>
 
