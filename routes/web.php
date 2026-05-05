@@ -56,6 +56,7 @@ Route::prefix('admin')->group(function () {
     })->middleware('admin.tools')->name('admin.logout');
 
     Route::middleware('admin.tools')->group(function () {
+        Route::livewire('/gtmanager', 'gt.golden-ticket-manager')->name('gtmanager');
         Route::livewire('/historical', 'historical-data-viewer')->name('historical');
         Route::livewire('/entry-io', 'entry-data-io')->name('entry-data-io');
         Route::livewire('/editor', 'data-editor')->name('data-editor');
