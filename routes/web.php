@@ -9,5 +9,7 @@ Route::redirect('/tos', '/terms');
 Route::livewire('/estimates', 'estimates')->name('estimates');
 Route::livewire('/notifications', 'notification-signup')->name('notifications');
 Route::livewire('/notifications/phone', 'notification-signup')->name('notifications.phone');
+Route::livewire('/historical', 'historical')->name('historical');
+Route::livewire('/editor', 'editor')->name('editor');
 Route::livewire('/tower', 'tower')->name('tower');
 Route::livewire('/wb', 'wristband-booth')->name('wristband-booth');
