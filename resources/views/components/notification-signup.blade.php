@@ -272,9 +272,9 @@ new #[Title('Entry Texting System')] class extends Component {
                             @endforeach
                         </div>
                     @else
-                        <div class="bg-gray-300 dark:bg-gray-700 p-2 sm:p-4 rounded-xl sm:text-xl mb-4 text-center">
+                        <div class="bg-gray-50 dark:bg-gray-950 p-2 sm:p-4 rounded-xl sm:text-xl mb-4 text-center">
                             <p>There are no active wristband groups at the moment.</p>
-                            <p>You can sign up for wristband-specific notificaitons once wristbands are distributed. If you're not seeing your wristband group, press <em>Refresh</em> in the upper right corner to check again.</p>
+                            <p>You can sign up for wristband-specific notifications once wristbands are distributed. If you're not seeing your wristband group, press <em>Refresh</em> in the upper right corner to check again.</p>
                         </div>
                     @endif
                     <flux:modal.trigger name="channel-code">
