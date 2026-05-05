@@ -31,11 +31,11 @@
 
         <flux:sidebar.nav>
             <flux:sidebar.group heading="Customer Entry" icon="arrow-right-end-on-rectangle">
-                <flux:sidebar.item href="/wb" :current="request()->is('wb')">
+                <flux:sidebar.item href="/admin/wb" :current="request()->is('wb')">
                     <span class="fas fa-store"></span>
                     Wristband Booth
                 </flux:sidebar.item>
-                <flux:sidebar.item href="/tower" :current="request()->is('tower')">
+                <flux:sidebar.item href="/admin/tower" :current="request()->is('tower')">
                     <span class="fas fa-tower-observation"></span>
                     Tower
                 </flux:sidebar.item>
@@ -60,6 +60,10 @@
                     <span class="fas fa-qrcode"></span>
                     Ticket Scanning
                 </flux:sidebar.item>
+                <flux:sidebar.item href="/admin/gtmanager" :current="request()->is('admin/gtmanager')">
+                    <span class="fas fa-ticket"></span>
+                    Ticket Management
+                </flux:sidebar.item>
                 <flux:sidebar.item href="/admin/nadamoo-sync" :current="request()->is('admin/nadamoo-sync')" wire:navigate>
                     <span class="fas fa-upload"></span>
                     Sync from Nadamoo
@@ -67,10 +71,6 @@
                 <flux:sidebar.item href="/admin/serial-number-scan" :current="request()->is('admin/serial-number-scan')" wire:navigate>
                     <span class="fas fa-pen-to-square"></span>
                     Sync Serial Numbers
-                </flux:sidebar.item>
-                <flux:sidebar.item href="/admin/gtmanager" :current="request()->is('admin/gtmanager')">
-                    <span class="fas fa-ticket"></span>
-                    Ticket Management
                 </flux:sidebar.item>
             </flux:sidebar.group>
         </flux:sidebar.nav>
