@@ -28,6 +28,7 @@ class Ticket extends Model
     protected $casts = [
         'shifts' => 'array',
         'group_zero' => 'boolean',
+        'sent_at' => 'datetime',
         'scanned_at' => 'datetime',
         'revoked_at' => 'datetime',
     ];

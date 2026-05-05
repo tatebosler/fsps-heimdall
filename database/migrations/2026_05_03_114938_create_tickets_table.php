@@ -25,6 +25,7 @@ return new class extends Migration
             $table->boolean('group_zero')->default(false);
             $table->char('serial', 6);
             $table->timestamp('scanned_at')->nullable();
+            $table->timestamp('sent_at')->nullable();
             $table->timestamp('revoked_at')->nullable();
             $table->string('scanned_by')->nullable();
 

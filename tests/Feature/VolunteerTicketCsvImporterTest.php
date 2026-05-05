@@ -173,7 +173,8 @@ test('golden ticket manager imports csv through livewire upload workflow', funct
         ->call('importCsv')
         ->assertHasNoErrors()
         ->assertSee('Tickets created:')
-        ->assertSee('1');
+        ->assertSee('1')
+        ->assertSet('tickets.0.vlid', 'VL-222');
 
     expect(Ticket::query()->where('vlid', 'VL-222')->exists())->toBeTrue();
 });
