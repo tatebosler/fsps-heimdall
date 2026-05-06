@@ -55,6 +55,8 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
 
     public string $masterTicketListOrientation = 'portrait';
 
+    public int $anonymousTicketQuantity = 4;
+
     public function mount(): void
     {
         $this->selectedPsYear = DateHelpers::psYearForDate(now());
@@ -94,6 +96,7 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
     {
         $this->modal('import-tickets')->close();
         $this->modal('print-master-ticket-list')->close();
+        $this->modal('create-anonymous-tickets')->close();
         $this->modal('delete-ticket-confirmation')->close();
         $this->modal('delete-all-tickets-confirmation')->close();
     }
@@ -254,6 +257,37 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
             ->count();
 
         $this->modal('delete-all-tickets-confirmation')->show();
+    }
+
+    public function openCreateAnonymousTicketsModal(): void
+    {
+        $this->anonymousTicketQuantity = 4;
+
+        $this->resetValidation(['anonymousTicketQuantity']);
+        $this->modal('create-anonymous-tickets')->show();
+    }
+
+    public function createAnonymousTickets(): void
+    {
+        $validated = $this->validate([
+            'anonymousTicketQuantity' => ['required', 'integer', 'min:1', 'max:1000'],
+        ]);
+
+        $requestedQuantity = (int) $validated['anonymousTicketQuantity'];
+        $quantityToCreate = (int) (ceil($requestedQuantity / 4) * 4);
+
+        for ($i = 0; $i < $quantityToCreate; $i++) {
+            Ticket::query()->create([
+                'ps_year' => $this->selectedPsYear,
+                'group_zero' => false,
+                'serial' => $this->generateUniqueSerial($this->selectedPsYear, false, true),
+            ]);
+        }
+
+        $this->anonymousTicketQuantity = 4;
+        $this->modal('create-anonymous-tickets')->close();
+
+        unset($this->tickets);
     }
 
     public function cancelDeleteAllTickets(): void
@@ -572,10 +606,10 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
         return $trimmed === '' ? null : $trimmed;
     }
 
-    private function generateUniqueSerial(int $psYear, bool $groupZero): string
+    private function generateUniqueSerial(int $psYear, bool $groupZero, bool $anonymous = false): string
     {
         for ($attempt = 0; $attempt < 50; $attempt++) {
-            $prefix = $groupZero ? '0' : (string) random_int(1, 9);
+            $prefix = $groupZero ? '0' : ($anonymous ? '9' : (string) random_int(1, 8));
             $middle = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
             $suffix = (string) random_int(0, 9);
             $serial = $prefix.$middle.$suffix;
@@ -666,7 +700,7 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
 
                     <div class="my-1 border-t border-gray-200 dark:border-white/10"></div>
 
-                    <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                    <button type="button" wire:click="openCreateAnonymousTicketsModal" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-plus mr-2" aria-hidden="true"></span>Create anonymous tickets
                     </button>
                     <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
@@ -814,6 +848,27 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
             <div class="flex justify-end gap-2">
                 <flux:button type="button" variant="ghost" x-on:click="$flux.modal('print-master-ticket-list').close()">Cancel</flux:button>
                 <flux:button type="submit" variant="primary">Generate PDF</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    <flux:modal name="create-anonymous-tickets">
+        <h2>Create Anonymous Tickets</h2>
+
+        <form class="mt-4 space-y-4" wire:submit="createAnonymousTickets">
+            <flux:field>
+                <flux:label>How many tickets should be created?</flux:label>
+                <flux:input wire:model="anonymousTicketQuantity" type="number" min="1" step="1" />
+                <flux:error name="anonymousTicketQuantity" />
+            </flux:field>
+
+            <p class="text-sm text-zinc-600 dark:text-zinc-400">
+                The requested amount will be rounded up to the nearest multiple of 4.
+            </p>
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" x-on:click="$flux.modal('create-anonymous-tickets').close()">Cancel</flux:button>
+                <flux:button type="submit" variant="primary">Create tickets</flux:button>
             </div>
         </form>
     </flux:modal>

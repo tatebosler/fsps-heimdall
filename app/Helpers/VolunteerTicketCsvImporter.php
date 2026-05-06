@@ -421,7 +421,7 @@ class VolunteerTicketCsvImporter
     private function generateUniqueSerial(int $psYear, bool $groupZero): string
     {
         for ($attempt = 0; $attempt < 1000; $attempt++) {
-            $prefix = $groupZero ? '0' : (string) random_int(1, 9);
+            $prefix = $groupZero ? '0' : (string) random_int(1, 8);
             $middle = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
             $base = $prefix.$middle;
             $serial = $base.$this->verhoeffCheckDigit($base);

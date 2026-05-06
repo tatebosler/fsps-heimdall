@@ -148,6 +148,50 @@ test('create ticket action sets working ticket to null and can create a new tick
     expect($createdTicket->group_zero)->toBeTrue();
 });
 
+test('creating a standard ticket uses a serial that starts between 1 and 8', function () {
+    Livewire::test('gt.golden-ticket-manager')
+        ->call('openCreateTicketModal')
+        ->set('ticketFirstName', 'Sam')
+        ->set('ticketLastName', 'Standard')
+        ->set('ticketPriorityAdmission', false)
+        ->call('saveTicket');
+
+    $createdTicket = Ticket::query()->latest('id')->first();
+
+    expect($createdTicket)->not->toBeNull();
+    expect($createdTicket->serial)->toHaveLength(6);
+    expect((int) substr($createdTicket->serial, 0, 1))->toBeGreaterThanOrEqual(1)->toBeLessThanOrEqual(8);
+});
+
+test('create anonymous tickets rounds quantity up to nearest multiple of four and uses 9 prefix', function () {
+    $activeYear = DateHelpers::psYearForDate(now());
+
+    Livewire::test('gt.golden-ticket-manager')
+        ->set('selectedPsYear', $activeYear)
+        ->call('openCreateAnonymousTicketsModal')
+        ->set('anonymousTicketQuantity', 5)
+        ->call('createAnonymousTickets')
+        ->assertSet('anonymousTicketQuantity', 4);
+
+    $createdTickets = Ticket::query()
+        ->where('ps_year', $activeYear)
+        ->orderBy('id')
+        ->get();
+
+    expect($createdTickets)->toHaveCount(8);
+
+    foreach ($createdTickets as $ticket) {
+        expect($ticket->serial)->toHaveLength(6);
+        expect($ticket->serial)->toStartWith('9');
+        expect($ticket->group_zero)->toBeFalse();
+        expect($ticket->first_name)->toBeNull();
+        expect($ticket->last_name)->toBeNull();
+        expect($ticket->email)->toBeNull();
+        expect($ticket->phone)->toBeNull();
+        expect($ticket->zip)->toBeNull();
+    }
+});
+
 test('edit ticket action sets working ticket and updates editable fields', function () {
     $ticket = Ticket::factory()->create([
         'first_name' => 'Old',
