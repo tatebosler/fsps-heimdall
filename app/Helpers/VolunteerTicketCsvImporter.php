@@ -266,13 +266,14 @@ class VolunteerTicketCsvImporter
         }
 
         $timezone = config('app.timezone', 'America/Chicago');
+        $normalizedShiftDate = $this->normalizeShiftDate($shiftDate);
 
-        $start = Carbon::parse("{$shiftDate} {$shiftStart}", $timezone);
+        $start = Carbon::parse("{$normalizedShiftDate} {$shiftStart}", $timezone);
 
         if ($shiftEnd === '') {
             $end = $start->copy()->addHours(4);
         } else {
-            $end = Carbon::parse("{$shiftDate} {$shiftEnd}", $timezone);
+            $end = Carbon::parse("{$normalizedShiftDate} {$shiftEnd}", $timezone);
 
             if ($end->lessThan($start)) {
                 $end->addDay();
@@ -284,6 +285,15 @@ class VolunteerTicketCsvImporter
             'start' => $start->format('Y-m-d H:i:s'),
             'end' => $end->format('Y-m-d H:i:s'),
         ];
+    }
+
+    private function normalizeShiftDate(string $shiftDate): string
+    {
+        if ($shiftDate === '0000-00-00') {
+            return now()->startOfYear()->month(4)->day(1)->format('Y-m-d');
+        }
+
+        return $shiftDate;
     }
 
     /**

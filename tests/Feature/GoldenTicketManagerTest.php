@@ -1,7 +1,9 @@
 <?php
 
 use App\Helpers\DateHelpers;
+use App\Mail\GoldenTicket;
 use App\Models\Ticket;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 
 test('golden ticket manager renders for current year', function () {
@@ -261,6 +263,51 @@ test('download scan report action returns a csv download', function () {
     Livewire::test('gt.golden-ticket-manager')
         ->call('downloadScanReport')
         ->assertFileDownloaded("golden-ticket-scan-report-{$calendarYear}.csv");
+});
+
+test('send all staged tickets sends unsent ticket emails and updates sent_at', function () {
+    Mail::fake();
+
+    $activeYear = DateHelpers::psYearForDate(now());
+
+    $unsentTicketOne = Ticket::factory()->create([
+        'ps_year' => $activeYear,
+        'email' => 'one@example.com',
+        'sent_at' => null,
+    ]);
+
+    $unsentTicketTwo = Ticket::factory()->create([
+        'ps_year' => $activeYear,
+        'email' => 'two@example.com',
+        'sent_at' => null,
+    ]);
+
+    $alreadySentTicket = Ticket::factory()->create([
+        'ps_year' => $activeYear,
+        'email' => 'sent@example.com',
+        'sent_at' => now()->subHour(),
+    ]);
+
+    $ticketWithoutEmail = Ticket::factory()->create([
+        'ps_year' => $activeYear,
+        'email' => null,
+        'sent_at' => null,
+    ]);
+
+    Livewire::test('gt.golden-ticket-manager')
+        ->call('sendAllStagedTickets');
+
+    Mail::assertSent(GoldenTicket::class, 2);
+
+    $unsentTicketOne->refresh();
+    $unsentTicketTwo->refresh();
+    $alreadySentTicket->refresh();
+    $ticketWithoutEmail->refresh();
+
+    expect($unsentTicketOne->sent_at)->not->toBeNull();
+    expect($unsentTicketTwo->sent_at)->not->toBeNull();
+    expect($alreadySentTicket->sent_at)->not->toBeNull();
+    expect($ticketWithoutEmail->sent_at)->toBeNull();
 });
 
 test('open print master ticket list modal initializes print options', function () {

@@ -638,6 +638,24 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
         $this->modal('test-email-ticket')->close();
     }
 
+    public function sendAllStagedTickets(): void
+    {
+        Ticket::query()
+            ->where('ps_year', $this->selectedPsYear)
+            ->whereNull('sent_at')
+            ->whereNotNull('email')
+            ->where('email', '<>', '')
+            ->orderBy('id')
+            ->cursor()
+            ->each(function (Ticket $ticket): void {
+                Mail::to($ticket->email)->send(new GoldenTicket($ticket));
+
+                $ticket->forceFill([
+                    'sent_at' => now(),
+                ])->save();
+            });
+    }
+
     private function normalizeNullableString(mixed $value): ?string
     {
         $trimmed = trim((string) $value);
@@ -748,7 +766,7 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
 
                     <div class="my-1 border-t border-gray-200 dark:border-white/10"></div>
 
-                    <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                    <button type="button" wire:click="sendAllStagedTickets" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-envelope mr-2" aria-hidden="true"></span>Send all staged tickets
                     </button>
 
@@ -945,9 +963,9 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                     </td>
                     <td class="px-3 py-4 text-sm align-top text-gray-500 dark:text-gray-400">
                         @if (empty($ticket->first_name) && empty($ticket->last_name))
-                            <p class="text-sm italic text-gray-600 dark:text-gray-400">Anonymous</p>
+                            <p class="text-xl font-bold italic text-gray-600 dark:text-gray-400">Anonymous</p>
                         @else
-                            <p>{{ $ticket->first_name }} {{ $ticket->last_name }}</p>
+                            <p class="text-xl font-bold">{{ $ticket->first_name }} {{ $ticket->last_name }}</p>
                         @endif
                         <p>{{ $ticket->email }}</p>
                         <p>{{ $ticket->phone }}</p>

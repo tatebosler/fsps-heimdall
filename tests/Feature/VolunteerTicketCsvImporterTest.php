@@ -186,6 +186,32 @@ test('importer preserves local shift times from csv rows without explicit end ti
     expect($ticket->shifts[0]['end'])->toBe('2026-05-09 17:15:00');
 });
 
+test('importer assigns zero-date shifts to april first of the current year', function () {
+    $csvPath = tempnam(sys_get_temp_dir(), 'volunteer-ticket-import-');
+
+    expect($csvPath)->not->toBeFalse();
+
+    file_put_contents($csvPath, implode("\n", [
+        'Job,Shift start date,Shift start time,Parent ID,Sub-Volunteer ID,Volunteer Identifier,Email,First Name,Last Name,Zip code',
+        'Catalog writing and proofing? [offline],0000-00-00,12:00 AM,0,5237836,1172526,sseabergwood@gmail.com,Sophie,Seaberg-Wood,55118',
+    ]));
+
+    $summary = app(VolunteerTicketCsvImporter::class)->import($csvPath);
+
+    unlink($csvPath);
+
+    expect($summary['rows_read'])->toBe(1);
+    expect($summary['invalid_rows'])->toBe(0);
+
+    $ticket = Ticket::query()->where('vlid', '1172526')->first();
+
+    expect($ticket)->not->toBeNull();
+    expect($ticket->ps_year)->toBe(DateHelpers::psYearForDate(now()->startOfYear()->month(4)->day(1)));
+    expect($ticket->shifts)->toHaveCount(1);
+    expect($ticket->shifts[0]['start'])->toBe(now()->startOfYear()->month(4)->day(1)->format('Y-m-d').' 00:00:00');
+    expect($ticket->shifts[0]['end'])->toBe(now()->startOfYear()->month(4)->day(1)->format('Y-m-d').' 04:00:00');
+});
+
 test('golden ticket manager imports csv through livewire upload workflow', function () {
     $csv = implode("\n", [
         'Job,Shift start date,Shift start time,Shift end time,Volunteer Identifier,Phone (mobile preferred),First Name,Last Name,Email,Zip code',
