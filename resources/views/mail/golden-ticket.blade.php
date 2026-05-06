@@ -75,7 +75,9 @@ li {
 @endswitch
 <h2>Pre-sale opening and wristband booth hours; other entry information</h2>
 <p><strong>The pre-sale hours are {{ $presale_open_time }} to {{ $presale_close_time }}. Wristband distribution will open at {{ $wristband_distribution_start_time }}.</strong></p>
+@if($ticket->priorityDesignation() === 'shift_start')
 <p>You may bring a shopping helper along with you. Both individuals must be present at the time your Golden Ticket is scanned.</p>
+@endif
 <p>The pre-sale wristband is valid for {{ $presale_day }} only; same-day re-entry is permitted. If you are not given a wristband upon arrival and would like to re-enter the sale, you must get a wristband at the Info Desk before you check out.</p>
 <p>If you are shopping after {{ $projected_off_bands_time }}, please go to the building entrance instead of the wristband booth. (Signage will direct you there once you arrive.) If you can't shop at all on Thursday, you can forward this email with the QR code to a friend or family member. As a reminder, Golden Tickets are valid for one scan only.</p>
 <h2>Pre-sale parking and arrival information</h2>
