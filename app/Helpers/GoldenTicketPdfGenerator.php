@@ -14,7 +14,7 @@ class GoldenTicketPdfGenerator
 {
     private const AWARD_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"><path fill="#111111" d="M341.9 38.1C328.5 29.9 311.6 29.9 298.2 38.1C273.8 53 258.7 57 230.1 56.4C214.4 56 199.8 64.5 192.2 78.3C178.5 103.4 167.4 114.5 142.3 128.2C128.5 135.7 120.1 150.4 120.4 166.1C121.1 194.7 117 209.8 102.1 234.2C93.9 247.6 93.9 264.5 102.1 277.9C117 302.3 121 317.4 120.4 346C120 361.7 128.5 376.3 142.3 383.9C164.4 396 175.6 406 187.4 425.4L138.7 522.5C132.8 534.4 137.6 548.8 149.4 554.7L235.4 597.7C246.9 603.4 260.9 599.1 267.1 587.9L319.9 492.8L372.7 587.9C378.9 599.1 392.9 603.5 404.4 597.7L490.4 554.7C502.3 548.8 507.1 534.4 501.1 522.5L452.5 425.3C464.2 405.9 475.5 395.9 497.6 383.8C511.4 376.3 519.8 361.6 519.5 345.9C518.8 317.3 522.9 302.2 537.8 277.8C546 264.4 546 247.5 537.8 234.1C522.9 209.7 518.9 194.6 519.5 166C519.9 150.3 511.4 135.7 497.6 128.1C472.5 114.4 461.4 103.3 447.7 78.2C440.2 64.4 425.5 56 409.8 56.3C381.2 57 366.1 52.9 341.7 38zM320 160C373 160 416 203 416 256C416 309 373 352 320 352C267 352 224 309 224 256C224 203 267 160 320 160z"/></svg>';
 
-    private const TEMPLATE_PDF_PATH = 'app/private/template.pdf';
+    private const TEMPLATE_PDF_PATH = 'templates/template.pdf';
 
     private const TEMPLATE_PNG_PATH = 'app/private/template.png';
 
@@ -36,7 +36,7 @@ class GoldenTicketPdfGenerator
 
     private const VOLUNTEER_NAME_Y = 631;
 
-    private const ANONYMOUS_TEMPLATE_PDF_PATH = 'app/private/anonymous-4x.pdf';
+    private const ANONYMOUS_TEMPLATE_PDF_PATH = 'templates/anonymous-4x.pdf';
 
     private const ANONYMOUS_TEMPLATE_PNG_PATH = 'app/private/anonymous-4x.png';
 
@@ -368,7 +368,7 @@ class GoldenTicketPdfGenerator
     private static function templateBackgroundPath(): string
     {
         $templatePngPath = storage_path(self::TEMPLATE_PNG_PATH);
-        $templatePdfPath = storage_path(self::TEMPLATE_PDF_PATH);
+        $templatePdfPath = public_path(self::TEMPLATE_PDF_PATH);
 
         if (is_file($templatePngPath) && filemtime($templatePngPath) >= filemtime($templatePdfPath)) {
             return $templatePngPath;
@@ -400,7 +400,7 @@ class GoldenTicketPdfGenerator
     private static function anonymousTemplateBackgroundPath(): string
     {
         $templatePngPath = storage_path(self::ANONYMOUS_TEMPLATE_PNG_PATH);
-        $templatePdfPath = storage_path(self::ANONYMOUS_TEMPLATE_PDF_PATH);
+        $templatePdfPath = public_path(self::ANONYMOUS_TEMPLATE_PDF_PATH);
 
         if (is_file($templatePngPath) && filemtime($templatePngPath) >= filemtime($templatePdfPath)) {
             return $templatePngPath;

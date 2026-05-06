@@ -84,17 +84,43 @@ class GoldenTicketScanVerifier
 
     /**
      * @param  array<int, string>  $qrCodes
-     * @return array{results: array<int, array{line: int, qr_code: string, status: string, first_name: ?string, message: string}>, summary: array{total: int, success: int, invalid: int, revoked: int, already_scanned: int, counts: array<string, int>}}
+     * @return array{results: array<int, array{line: int, qr_code: string, status: string, first_name: ?string, message: string}>, summary: array{total: int, success: int, invalid: int, revoked: int, already_scanned: int, duplicate_in_import: int, counts: array<string, int>}}
      */
     public function scanMany(array $qrCodes): array
     {
         $results = [];
         $counts = [];
+        $processedSerials = [];
 
         foreach (array_values($qrCodes) as $index => $qrCode) {
+            $ticketValue = $this->extractTicketValue($qrCode);
+            $serialNumber = $ticketValue !== null ? $this->decodeSerialNumber($ticketValue) : null;
+
+            // Check for duplicates within this import
+            if ($serialNumber !== null && isset($processedSerials[$serialNumber])) {
+                $status = 'DUPLICATE_IN_IMPORT';
+                $firstName = null;
+                $result = $this->scanPayload($status, $firstName);
+                $counts[$status] = ($counts[$status] ?? 0) + 1;
+
+                $results[] = [
+                    'line' => $index + 1,
+                    'qr_code' => $qrCode,
+                    ...$result,
+                ];
+
+                continue;
+            }
+
+            // Process the scan normally
             $result = $this->scan($qrCode);
             $status = $result['status'];
             $counts[$status] = ($counts[$status] ?? 0) + 1;
+
+            // Track this serial number as processed
+            if ($serialNumber !== null) {
+                $processedSerials[$serialNumber] = true;
+            }
 
             $results[] = [
                 'line' => $index + 1,
@@ -111,6 +137,7 @@ class GoldenTicketScanVerifier
                 'invalid' => $counts['INVALID'] ?? 0,
                 'revoked' => $counts['REVOKED'] ?? 0,
                 'already_scanned' => $counts['ALREADY_SCANNED'] ?? 0,
+                'duplicate_in_import' => $counts['DUPLICATE_IN_IMPORT'] ?? 0,
                 'counts' => $counts,
             ],
         ];
