@@ -1,6 +1,8 @@
 <?php
 
+use App\Helpers\GoldenTicketPdfGenerator;
 use App\Http\Middleware\AdminToolsAuth;
+use App\Models\Ticket;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -62,5 +64,13 @@ Route::prefix('admin')->group(function () {
         Route::livewire('/editor', 'data-editor')->name('data-editor');
         Route::livewire('/tower', 'tower')->name('tower');
         Route::livewire('/wb', 'wristband-booth')->name('wristband-booth');
+        Route::get('/tickets/{ticket}/pdf', function (Ticket $ticket) {
+            $pdf = GoldenTicketPdfGenerator::binary($ticket);
+
+            return response($pdf, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="'.GoldenTicketPdfGenerator::filename($ticket).'"',
+            ]);
+        })->name('admin.ticket.pdf');
     });
 });

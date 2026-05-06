@@ -2,8 +2,10 @@
 
 use App\Helpers\DateHelpers;
 use App\Helpers\VolunteerTicketCsvImporter;
+use App\Mail\GoldenTicket;
 use App\Models\Ticket;
 use Fpdf\Fpdf;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Layout;
@@ -57,6 +59,10 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
 
     public int $anonymousTicketQuantity = 4;
 
+    public ?int $testEmailTicketId = null;
+
+    public string $testEmailAddress = '';
+
     public function mount(): void
     {
         $this->selectedPsYear = DateHelpers::psYearForDate(now());
@@ -99,6 +105,7 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
         $this->modal('create-anonymous-tickets')->close();
         $this->modal('delete-ticket-confirmation')->close();
         $this->modal('delete-all-tickets-confirmation')->close();
+        $this->modal('test-email-ticket')->close();
     }
 
     public function importCsv(VolunteerTicketCsvImporter $importer): void
@@ -599,6 +606,38 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
         unset($this->tickets);
     }
 
+    public function openTestEmailModal(int $ticketId): void
+    {
+        $this->testEmailTicketId = $ticketId;
+        $this->testEmailAddress = '';
+        $this->resetValidation(['testEmailAddress']);
+        $this->modal('test-email-ticket')->show();
+    }
+
+    public function sendTestEmail(): void
+    {
+        $this->validate([
+            'testEmailAddress' => ['required', 'email', 'max:255'],
+        ]);
+
+        $ticket = Ticket::query()
+            ->whereKey($this->testEmailTicketId)
+            ->where('ps_year', $this->selectedPsYear)
+            ->first();
+
+        if (! $ticket) {
+            $this->modal('test-email-ticket')->close();
+
+            return;
+        }
+
+        Mail::to($this->testEmailAddress)->send(new GoldenTicket($ticket));
+
+        $this->testEmailTicketId = null;
+        $this->testEmailAddress = '';
+        $this->modal('test-email-ticket')->close();
+    }
+
     private function normalizeNullableString(mixed $value): ?string
     {
         $trimmed = trim((string) $value);
@@ -983,6 +1022,12 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                                 <button type="button" wire:click="openEditTicketModal({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                                     <span class="fas fa-pen-to-square mr-2" aria-hidden="true"></span>Edit ticket
                                 </button>
+                                <a href="{{ route('admin.ticket.pdf', $ticket) }}" target="_blank" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                                    <span class="fas fa-file-pdf mr-2" aria-hidden="true"></span>View PDF
+                                </a>
+                                <button type="button" wire:click="openTestEmailModal({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                                    <span class="fas fa-paper-plane mr-2" aria-hidden="true"></span>Send test email
+                                </button>
                                 @if ($ticket->scanned_at)
                                     <button type="button" wire:click="undoTicketScan({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                                         <span class="fas fa-qrcode mr-2" aria-hidden="true"></span>Undo scan
@@ -1070,6 +1115,26 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                 <flux:button wire:click="cancelDeleteAllTickets" variant="ghost">Cancel</flux:button>
                 <flux:button wire:click="deleteAllTicketsForSelectedYear" variant="danger">Delete all tickets</flux:button>
             </div>
+        </div>
+    </flux:modal>
+
+    <flux:modal name="test-email-ticket">
+        <div class="space-y-4">
+            <h2>Send Test Email</h2>
+            <p class="text-sm text-zinc-600 dark:text-zinc-400">A copy of the Golden Ticket email will be sent to the address below. The ticket's <strong>sent_at</strong> timestamp will not be updated.</p>
+
+            <form wire:submit="sendTestEmail" class="space-y-4">
+                <flux:field>
+                    <flux:label>Destination email address</flux:label>
+                    <flux:input wire:model="testEmailAddress" type="email" placeholder="recipient@example.com" />
+                    <flux:error name="testEmailAddress" />
+                </flux:field>
+
+                <div class="flex justify-end gap-2">
+                    <flux:button type="button" variant="ghost" x-on:click="$flux.modal('test-email-ticket').close()">Cancel</flux:button>
+                    <flux:button type="submit" variant="primary">Send email</flux:button>
+                </div>
+            </form>
         </div>
     </flux:modal>
 </div>
