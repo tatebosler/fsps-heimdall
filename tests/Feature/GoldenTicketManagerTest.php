@@ -310,7 +310,7 @@ test('download scan report action returns a csv download', function () {
         ->assertFileDownloaded("golden-ticket-scan-report-{$calendarYear}.csv");
 });
 
-test('send all staged tickets sends unsent ticket emails and updates sent_at', function () {
+test('send all staged tickets queues unsent ticket emails and updates sent_at', function () {
     Mail::fake();
 
     $activeYear = DateHelpers::psYearForDate(now());
@@ -347,9 +347,10 @@ test('send all staged tickets sends unsent ticket emails and updates sent_at', f
     ]);
 
     Livewire::test('gt.golden-ticket-manager')
-        ->call('sendAllStagedTickets');
+        ->call('sendAllStagedTickets')
+        ->assertSet('bulkSendStatusMessage', 'Queued 2 staged tickets for delivery.');
 
-    Mail::assertSent(GoldenTicket::class, 2);
+    Mail::assertQueued(GoldenTicket::class, 2);
 
     $unsentTicketOne->refresh();
     $unsentTicketTwo->refresh();
@@ -363,7 +364,7 @@ test('send all staged tickets sends unsent ticket emails and updates sent_at', f
     expect($ticketWithoutEmail->sent_at)->toBeNull();
     expect($revokedTicket->sent_at)->toBeNull();
 
-    Mail::assertNotSent(GoldenTicket::class, function (GoldenTicket $mail) use ($revokedTicket): bool {
+    Mail::assertNotQueued(GoldenTicket::class, function (GoldenTicket $mail) use ($revokedTicket): bool {
         return $mail->hasTo($revokedTicket->email);
     });
 });

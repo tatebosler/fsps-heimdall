@@ -6,6 +6,7 @@ use App\Helpers\VolunteerTicketCsvImporter;
 use App\Mail\GoldenTicket;
 use App\Models\Ticket;
 use Fpdf\Fpdf;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -63,6 +64,8 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
     public ?int $testEmailTicketId = null;
 
     public string $testEmailAddress = '';
+
+    public ?string $bulkSendStatusMessage = null;
 
     public function mount(): void
     {
@@ -683,6 +686,9 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
 
     public function sendAllStagedTickets(): void
     {
+        $queuedCount = 0;
+        $queuedAt = now();
+
         Ticket::query()
             ->where('ps_year', $this->selectedPsYear)
             ->whereNull('sent_at')
@@ -691,13 +697,23 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
             ->where('email', '<>', '')
             ->orderBy('id')
             ->cursor()
-            ->each(function (Ticket $ticket): void {
-                Mail::to($ticket->email)->send(new GoldenTicket($ticket));
+            ->each(function (Ticket $ticket) use (&$queuedCount, $queuedAt): void {
+                Mail::to($ticket->email)->queue(new GoldenTicket($ticket));
 
                 $ticket->forceFill([
-                    'sent_at' => now(),
+                    'sent_at' => $queuedAt,
                 ])->save();
+
+                $queuedCount++;
             });
+
+        if ($queuedCount === 0) {
+            $this->bulkSendStatusMessage = 'No staged tickets were queued for delivery.';
+
+            return;
+        }
+
+        $this->bulkSendStatusMessage = 'Queued '.$queuedCount.' staged '.Str::plural('ticket', $queuedCount).' for delivery.';
     }
 
     private function normalizeNullableString(mixed $value): ?string
@@ -841,6 +857,13 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
             </div>
         </div>
     </div>
+
+    @if ($bulkSendStatusMessage)
+        <div class="rounded-md border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-900 dark:border-green-700 dark:bg-green-950/30 dark:text-green-200">
+            <span class="fas fa-circle-check mr-2" aria-hidden="true"></span>
+            {{ $bulkSendStatusMessage }}
+        </div>
+    @endif
 
     <flux:modal name="import-tickets" flyout>
         <h2 class="mb-4">Import from VolunteerLocal</h2>
