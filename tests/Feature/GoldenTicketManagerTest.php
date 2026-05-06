@@ -68,6 +68,51 @@ test('tickets array is populated for selected year and refreshed when year chang
         ->assertSet('tickets.0.id', $previousTicket->id);
 });
 
+test('ticket badges render each priority designation label', function () {
+    $activeYear = DateHelpers::psYearForDate(now());
+
+    Ticket::factory()->createMany([
+        [
+            'ps_year' => $activeYear,
+            'group_zero' => true,
+            'first_name' => 'Shift',
+            'last_name' => 'Start',
+            'shifts' => [
+                ['job' => 'Cashier', 'start' => '2025-05-08 17:00:00', 'end' => '2025-05-08 20:00:00'],
+            ],
+        ],
+        [
+            'ps_year' => $activeYear,
+            'group_zero' => true,
+            'first_name' => 'Shift',
+            'last_name' => 'End',
+            'shifts' => [
+                ['job' => 'Greeter', 'start' => '2025-05-08 12:00:00', 'end' => '2025-05-08 14:15:00'],
+            ],
+        ],
+        [
+            'ps_year' => $activeYear,
+            'group_zero' => true,
+            'first_name' => 'Manual',
+            'last_name' => 'GroupZero',
+            'shifts' => [],
+        ],
+        [
+            'ps_year' => $activeYear,
+            'group_zero' => false,
+            'first_name' => 'Standard',
+            'last_name' => 'Ticket',
+            'shifts' => [],
+        ],
+    ]);
+
+    Livewire::test('gt.golden-ticket-manager')
+        ->assertSeeHtml('Group&nbsp;Zero&nbsp;(S)')
+        ->assertSeeHtml('Group&nbsp;Zero&nbsp;(E)')
+        ->assertSeeHtml('Group&nbsp;Zero&nbsp;(M)')
+        ->assertSee('Standard');
+});
+
 test('mark as scanned sets scanned timestamp and scanner name', function () {
     $ticket = Ticket::factory()->create([
         'scanned_at' => null,

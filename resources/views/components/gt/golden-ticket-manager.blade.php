@@ -991,17 +991,31 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                         <div class="space-y-1">
                             <p class="font-mono text-2xl">{{ $ticket->serial }}</p>
                             <p class="mb-4">Global ID: <span class="font-mono">{{ $ticket->id }}</span></p>
-                            @if ($ticket->group_zero)
-                                <span class="bg-purple-700 text-purple-200 px-3 py-2 rounded">
-                                    <span class="fas fa-award mr-1"></span>
-                                    Group Zero
-                                </span>
-                            @else
-                                <span class="bg-green-700 text-green-200 px-3 py-2 rounded">
-                                    <span class="fas fa-seedling mr-1"></span>
-                                    Standard
-                                </span>
-                            @endif
+                            @switch($ticket->priorityDesignation())
+                                @case('shift_start')
+                                    <span class="whitespace-nowrap rounded bg-purple-700 px-3 py-2 text-purple-200">
+                                        <span class="fas fa-award mr-1"></span>
+                                        Group&nbsp;Zero&nbsp;(S)
+                                    </span>
+                                    @break
+                                @case('shift_end')
+                                    <span class="whitespace-nowrap rounded bg-purple-700 px-3 py-2 text-purple-200">
+                                        <span class="fas fa-award mr-1"></span>
+                                        Group&nbsp;Zero&nbsp;(E)
+                                    </span>
+                                    @break
+                                @case('manual')
+                                    <span class="whitespace-nowrap rounded bg-purple-700 px-3 py-2 text-purple-200">
+                                        <span class="fas fa-award mr-1"></span>
+                                        Group&nbsp;Zero&nbsp;(M)
+                                    </span>
+                                    @break
+                                @default
+                                    <span class="whitespace-nowrap rounded bg-green-700 px-3 py-2 text-green-200">
+                                        <span class="fas fa-seedling mr-1"></span>
+                                        Standard
+                                    </span>
+                            @endswitch
                         </div>
                     </td>
                     <td class="px-3 py-4 text-sm align-top text-gray-500 dark:text-gray-400">
