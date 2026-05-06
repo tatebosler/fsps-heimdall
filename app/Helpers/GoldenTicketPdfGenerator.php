@@ -454,25 +454,41 @@ class GoldenTicketPdfGenerator
         try {
             file_put_contents($awardIconSvgPath, self::AWARD_ICON_SVG);
 
-            $process = new Process([
-                'sips',
-                '-s',
-                'format',
-                'png',
-                $awardIconSvgPath,
-                '--out',
-                $awardIconPngPath,
-            ]);
+            // Try ImageMagick convert first (works on Linux), then fall back to sips (macOS)
+            $converters = [
+                [
+                    'convert',
+                    $awardIconSvgPath,
+                    '-background',
+                    'none',
+                    $awardIconPngPath,
+                ],
+                [
+                    'sips',
+                    '-s',
+                    'format',
+                    'png',
+                    $awardIconSvgPath,
+                    '--out',
+                    $awardIconPngPath,
+                ],
+            ];
 
-            $process->run();
+            $lastError = null;
+            foreach ($converters as $command) {
+                $process = new Process($command);
+                $process->run();
 
-            if (! $process->isSuccessful() || ! is_file($awardIconPngPath)) {
-                throw new \RuntimeException('Unable to render award icon PNG from SVG.');
+                if ($process->isSuccessful() && is_file($awardIconPngPath)) {
+                    return $awardIconPngPath;
+                }
+
+                $lastError = $process->getErrorOutput() ?: $process->getOutput();
             }
+
+            throw new \RuntimeException('Unable to render award icon PNG from SVG. '.($lastError ?: 'No converter available'));
         } finally {
             @unlink($awardIconSvgPath);
         }
-
-        return $awardIconPngPath;
     }
 }
