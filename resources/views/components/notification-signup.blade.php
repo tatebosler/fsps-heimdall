@@ -272,7 +272,7 @@ new #[Title('Entry Texting System')] class extends Component {
                             @endforeach
                         </div>
                     @else
-                        <div class="bg-gray-50 dark:bg-gray-950 p-2 sm:p-4 rounded-xl sm:text-xl mb-4 text-center">
+                        <div class="bg-gray-100 dark:bg-gray-900 p-2 sm:p-4 rounded-xl sm:text-xl mb-4 text-center">
                             <p>There are no active wristband groups at the moment.</p>
                             <p class="text-sm">You can sign up for wristband-specific notifications once wristbands are distributed.</p>
                         </div>

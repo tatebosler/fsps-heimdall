@@ -342,7 +342,7 @@ new #[Layout('components.layouts.admin')] #[Title('Bulk Scanner')] class extends
             <flux:timeline.item>
                 <flux:timeline.indicator>5</flux:timeline.indicator>
                 <flux:timeline.content class="space-y-2">
-                    <p class="text-lg font-bold">Wait for the scanner to finish upload its data and beep, then press the Submit button to process data</p>
+                    <p class="text-lg font-bold">Wait for the scanner to finish uploading its data and beep, then press the Submit button to process data</p>
                 </flux:timeline.content>
             </flux:timeline.item>
         </flux:timeline>
