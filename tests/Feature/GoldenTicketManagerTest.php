@@ -354,3 +354,58 @@ test('print master ticket list action returns a pdf download', function () {
         ->call('printMasterTicketList')
         ->assertFileDownloaded("golden-ticket-master-list-{$calendarYear}.pdf");
 });
+
+test('print anonymous tickets action returns a pdf download', function () {
+    $activeYear = DateHelpers::psYearForDate(now());
+    $calendarYear = DateHelpers::calendarYearForPsYear($activeYear);
+
+    Ticket::factory()->create([
+        'ps_year' => $activeYear,
+        'serial' => '912345',
+        'email' => null,
+    ]);
+
+    Ticket::factory()->create([
+        'ps_year' => $activeYear,
+        'serial' => '934567',
+        'email' => null,
+    ]);
+
+    Ticket::factory()->create([
+        'ps_year' => $activeYear,
+        'serial' => '812345',
+        'email' => null,
+    ]);
+
+    Livewire::test('gt.golden-ticket-manager')
+        ->call('printAnonymousTickets')
+        ->assertFileDownloaded("anonymous-tickets-{$calendarYear}.pdf");
+});
+
+test('print anonymous tickets creates 4 if none exist', function () {
+    $activeYear = DateHelpers::psYearForDate(now());
+    $calendarYear = DateHelpers::calendarYearForPsYear($activeYear);
+
+    Livewire::test('gt.golden-ticket-manager')
+        ->call('printAnonymousTickets')
+        ->assertFileDownloaded("anonymous-tickets-{$calendarYear}.pdf");
+
+    expect(Ticket::query()->where('ps_year', $activeYear)->whereNull('email')->where('serial', 'like', '9%')->count())->toBe(4);
+});
+
+test('print anonymous tickets rounds anonymous count up to multiple of four', function () {
+    $activeYear = DateHelpers::psYearForDate(now());
+    $calendarYear = DateHelpers::calendarYearForPsYear($activeYear);
+
+    Ticket::factory()->createMany([
+        ['ps_year' => $activeYear, 'serial' => '912345', 'email' => null],
+        ['ps_year' => $activeYear, 'serial' => '923456', 'email' => null],
+        ['ps_year' => $activeYear, 'serial' => '934567', 'email' => null],
+    ]);
+
+    Livewire::test('gt.golden-ticket-manager')
+        ->call('printAnonymousTickets')
+        ->assertFileDownloaded("anonymous-tickets-{$calendarYear}.pdf");
+
+    expect(Ticket::query()->where('ps_year', $activeYear)->whereNull('email')->where('serial', 'like', '9%')->count())->toBe(4);
+});

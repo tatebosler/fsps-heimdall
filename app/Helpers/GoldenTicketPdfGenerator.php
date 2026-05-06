@@ -36,6 +36,30 @@ class GoldenTicketPdfGenerator
 
     private const VOLUNTEER_NAME_Y = 631;
 
+    private const ANONYMOUS_TEMPLATE_PDF_PATH = 'app/private/anonymous-4x.pdf';
+
+    private const ANONYMOUS_TEMPLATE_PNG_PATH = 'app/private/anonymous-4x.png';
+
+    private const ANONYMOUS_PAGE_WIDTH = 792;
+
+    private const ANONYMOUS_PAGE_HEIGHT = 612;
+
+    private const ANONYMOUS_QUADRANT_WIDTH = 396;
+
+    private const ANONYMOUS_QUADRANT_HEIGHT = 306;
+
+    private const ANONYMOUS_QR_SIZE = 110;
+
+    private const ANONYMOUS_QR_X_OFFSET = 260;
+
+    private const ANONYMOUS_QR_Y_OFFSET = 40;
+
+    private const ANONYMOUS_PRESALE_BAR_X_OFFSET = 0;
+
+    private const ANONYMOUS_PRESALE_BAR_Y_OFFSET = 152;
+
+    private const ANONYMOUS_PRESALE_BAR_WIDTH = 220;
+
     public static function filename(Ticket $ticket): string
     {
         $serialNumber = preg_replace('/[^A-Za-z0-9_-]/', '-', $ticket->serial_number ?: (string) $ticket->id);
@@ -68,6 +92,56 @@ class GoldenTicketPdfGenerator
 
         if (! is_string($result)) {
             throw new \RuntimeException('Unable to render Golden Ticket PDF.');
+        }
+
+        return $result;
+    }
+
+    public static function anonymousTicketsBinary(iterable $tickets, int $psYear): string
+    {
+        $ticketArray = is_array($tickets) ? $tickets : iterator_to_array($tickets);
+        $calendarYear = DateHelpers::calendarYearForPsYear($psYear);
+
+        $pdf = new Fpdf('L', 'pt', 'Letter');
+        $pdf->SetCreator((string) config('app.name', 'Heimdall'));
+        $pdf->SetAuthor((string) config('app.name', 'Heimdall'));
+        $pdf->SetTitle("Anonymous Golden Tickets {$calendarYear}");
+        $pdf->SetSubject('Anonymous Golden Tickets');
+        $pdf->SetMargins(0, 0, 0);
+        $pdf->SetAutoPageBreak(false, 0);
+
+        if (count($ticketArray) === 0) {
+            $pdf->AddPage();
+            $pdf->Image(self::anonymousTemplateBackgroundPath(), 0, 0, self::ANONYMOUS_PAGE_WIDTH, self::ANONYMOUS_PAGE_HEIGHT, 'PNG');
+        }
+
+        foreach (array_chunk($ticketArray, 4) as $pageTickets) {
+            $pdf->AddPage();
+            $pdf->Image(self::anonymousTemplateBackgroundPath(), 0, 0, self::ANONYMOUS_PAGE_WIDTH, self::ANONYMOUS_PAGE_HEIGHT, 'PNG');
+
+            foreach (array_values($pageTickets) as $position => $ticket) {
+                $x0 = ($position % 2) * self::ANONYMOUS_QUADRANT_WIDTH;
+                $y0 = intdiv($position, 2) * self::ANONYMOUS_QUADRANT_HEIGHT;
+
+                self::renderAnonymousPresaleBar(
+                    $pdf,
+                    $ticket,
+                    $x0 + self::ANONYMOUS_PRESALE_BAR_X_OFFSET,
+                    $y0 + self::ANONYMOUS_PRESALE_BAR_Y_OFFSET,
+                );
+                self::renderAnonymousQrCode(
+                    $pdf,
+                    $ticket,
+                    $x0 + self::ANONYMOUS_QR_X_OFFSET,
+                    $y0 + self::ANONYMOUS_QR_Y_OFFSET,
+                );
+            }
+        }
+
+        $result = $pdf->Output('S');
+
+        if (! is_string($result)) {
+            throw new \RuntimeException('Unable to render anonymous tickets PDF.');
         }
 
         return $result;
@@ -145,6 +219,35 @@ class GoldenTicketPdfGenerator
         } finally {
             @unlink($qrTmp);
         }
+    }
+
+    private static function renderAnonymousQrCode(Fpdf $pdf, Ticket $ticket, float $x, float $y): void
+    {
+        $qrTmp = tempnam(sys_get_temp_dir(), 'gt_qr_');
+
+        if ($qrTmp === false) {
+            throw new \RuntimeException('Unable to create temporary QR code file.');
+        }
+
+        try {
+            $qrPng = self::qrCodePng($ticket);
+            file_put_contents($qrTmp, $qrPng);
+            $pdf->Image($qrTmp, $x, $y, self::ANONYMOUS_QR_SIZE, self::ANONYMOUS_QR_SIZE, 'PNG');
+        } finally {
+            @unlink($qrTmp);
+        }
+    }
+
+    private static function renderAnonymousPresaleBar(Fpdf $pdf, Ticket $ticket, float $x, float $y): void
+    {
+        $text = explode(' | ', self::presaleSummary($ticket));
+
+        $pdf->SetFont('Helvetica', 'B', 10);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetXY($x, $y);
+        $pdf->Cell(self::ANONYMOUS_PRESALE_BAR_WIDTH, 20, $text[0], 0, 0, 'C');
+        $pdf->SetXY($x, $y + 12);
+        $pdf->Cell(self::ANONYMOUS_PRESALE_BAR_WIDTH, 20, $text[1], 0, 0, 'C');
     }
 
     private static function renderSerialNumber(Fpdf $pdf, Ticket $ticket): void
@@ -248,7 +351,7 @@ class GoldenTicketPdfGenerator
         $saleClose = self::formatHour((string) ($hours['close'] ?? '20:30'));
 
         return sprintf(
-            '%s | %s - %s | Minnesota State Fair Grandstand',
+            '%s | %s - %s',
             $presaleDate->format('l, F j, Y'),
             $saleOpen,
             $saleClose,
@@ -289,6 +392,38 @@ class GoldenTicketPdfGenerator
 
         if (! $process->isSuccessful() || ! is_file($templatePngPath)) {
             throw new \RuntimeException('Unable to render Golden Ticket template PNG from PDF.');
+        }
+
+        return $templatePngPath;
+    }
+
+    private static function anonymousTemplateBackgroundPath(): string
+    {
+        $templatePngPath = storage_path(self::ANONYMOUS_TEMPLATE_PNG_PATH);
+        $templatePdfPath = storage_path(self::ANONYMOUS_TEMPLATE_PDF_PATH);
+
+        if (is_file($templatePngPath) && filemtime($templatePngPath) >= filemtime($templatePdfPath)) {
+            return $templatePngPath;
+        }
+
+        if (! is_file($templatePdfPath)) {
+            throw new \RuntimeException('Anonymous tickets template PDF is missing.');
+        }
+
+        $process = new Process([
+            'sips',
+            '-s',
+            'format',
+            'png',
+            $templatePdfPath,
+            '--out',
+            $templatePngPath,
+        ]);
+
+        $process->run();
+
+        if (! $process->isSuccessful() || ! is_file($templatePngPath)) {
+            throw new \RuntimeException('Unable to render anonymous tickets template PNG from PDF.');
         }
 
         return $templatePngPath;

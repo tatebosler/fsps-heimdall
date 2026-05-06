@@ -96,3 +96,17 @@ test('golden ticket pdf generator builds a stable filename', function () {
     expect(GoldenTicketPdfGenerator::filename($ticket))
         ->toBe('golden-ticket-'.$ticket->year.'-012345.pdf');
 });
+
+test('anonymous ticket pdf generator returns a pdf payload with page metadata set', function () {
+    $ticket = Ticket::factory()->make([
+        'ps_year' => DateHelpers::psYearForDate(now()),
+        'serial' => '912345',
+        'email' => null,
+    ]);
+
+    $pdf = GoldenTicketPdfGenerator::anonymousTicketsBinary([$ticket], $ticket->ps_year);
+
+    expect($pdf)->toStartWith('%PDF-');
+    expect(strlen($pdf))->toBeGreaterThan(1000);
+    expect($pdf)->toContain('Anonymous Golden Tickets');
+});

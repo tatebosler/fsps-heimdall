@@ -1,6 +1,7 @@
 <?php
 
 use App\Helpers\DateHelpers;
+use App\Helpers\GoldenTicketPdfGenerator;
 use App\Helpers\VolunteerTicketCsvImporter;
 use App\Mail\GoldenTicket;
 use App\Models\Ticket;
@@ -527,6 +528,48 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
         ]);
     }
 
+    public function printAnonymousTickets(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $psYear = $this->selectedPsYear;
+        $calendarYear = DateHelpers::calendarYearForPsYear($psYear);
+        $fileName = "anonymous-tickets-{$calendarYear}.pdf";
+
+        $anonymousQuery = Ticket::query()
+            ->where('ps_year', $psYear)
+            ->whereNull('email')
+            ->where('serial', 'like', '9%');
+
+        $anonymousCount = $anonymousQuery->count();
+        $ticketsToCreate = 0;
+
+        if ($anonymousCount === 0) {
+            $ticketsToCreate = 4;
+        } else {
+            $remainder = $anonymousCount % 4;
+            if ($remainder !== 0) {
+                $ticketsToCreate = 4 - $remainder;
+            }
+        }
+
+        for ($i = 0; $i < $ticketsToCreate; $i++) {
+            Ticket::query()->create([
+                'ps_year' => $psYear,
+                'group_zero' => false,
+                'serial' => $this->generateUniqueSerial($psYear, false, true),
+            ]);
+        }
+
+        $tickets = $anonymousQuery
+            ->orderBy('serial')
+            ->get();
+
+        return response()->streamDownload(function () use ($tickets, $psYear): void {
+            echo GoldenTicketPdfGenerator::anonymousTicketsBinary($tickets, $psYear);
+        }, $fileName, [
+            'Content-Type' => 'application/pdf',
+        ]);
+    }
+
     public function openCreateTicketModal(): void
     {
         $this->workingTicket = null;
@@ -760,7 +803,7 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                     <button type="button" wire:click="openCreateAnonymousTicketsModal" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-plus mr-2" aria-hidden="true"></span>Create anonymous tickets
                     </button>
-                    <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                    <button type="button" wire:click="printAnonymousTickets" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-print mr-2" aria-hidden="true"></span>Print anonymous tickets
                     </button>
 
