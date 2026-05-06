@@ -379,12 +379,8 @@ class GoldenTicketPdfGenerator
         }
 
         $process = new Process([
-            'sips',
-            '-s',
-            'format',
-            'png',
-            $templatePdfPath,
-            '--out',
+            'convert',
+            $templatePdfPath.'[0]',
             $templatePngPath,
         ]);
 
@@ -411,12 +407,8 @@ class GoldenTicketPdfGenerator
         }
 
         $process = new Process([
-            'sips',
-            '-s',
-            'format',
-            'png',
-            $templatePdfPath,
-            '--out',
+            'convert',
+            $templatePdfPath.'[0]',
             $templatePngPath,
         ]);
 
