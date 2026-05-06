@@ -164,7 +164,9 @@ class GoldenTicketScanVerifier
             return null;
         }
 
-        if (strtolower((string) ($urlParts['host'] ?? '')) !== 'www.friendsschoolplantsale.com') {
+        $host = strtolower((string) ($urlParts['host'] ?? ''));
+
+        if (! in_array($host, ['friendsschoolplantsale.com', 'www.friendsschoolplantsale.com'], true)) {
             return null;
         }
 
