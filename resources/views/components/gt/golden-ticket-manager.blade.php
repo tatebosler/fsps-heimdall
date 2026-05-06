@@ -67,6 +67,12 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
         unset($this->tickets);
     }
 
+    public function closeModals(): void
+    {
+        $this->modal('import-tickets')->close();
+        $this->modal('delete-ticket-confirmation')->close();
+    }
+
     public function importCsv(VolunteerTicketCsvImporter $importer): void
     {
         $this->validate([
@@ -305,16 +311,13 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                     <div class="my-1 border-t border-gray-200 dark:border-white/10"></div>
 
                     <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
-                        <span class="fas fa-qrcode mr-2" aria-hidden="true"></span>Open browser scanner
+                        <span class="fas fa-expand mr-2" aria-hidden="true"></span>Open browser scanner
                     </button>
                     <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
-                        <span class="fas fa-chart-bar mr-2" aria-hidden="true"></span>Open Nadamoo live scanner
+                        <span class="fas fa-qrcode mr-2" aria-hidden="true"></span>Open Nadamoo live scanner
                     </button>
                     <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
-                        <span class="fas fa-arrow-up-right-from-square mr-2" aria-hidden="true"></span>Sync from Nadamoo offline scanner
-                    </button>
-                    <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
-                        <span class="fas fa-pen-to-square mr-2" aria-hidden="true"></span>Sync scans from serial numbers
+                        <span class="fas fa-cloud-arrow-up mr-2" aria-hidden="true"></span>Sync from offline scanners
                     </button>
 
                     <div class="my-1 border-t border-gray-200 dark:border-white/10"></div>
@@ -403,6 +406,9 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                 <flux:timeline.content class="space-y-1">
                     <p class="text-lg font-bold">Tickets will be automatically imported and staged.</p>
                     <p class="text-gray-700 dark:text-gray-300">Emails will not be sent out yet &mdash; it's okay to stage tickets early, in case you need to review anything.</p>
+                    <flux:button type="button" variant="primary" wire:click="closeModals" class="mt-1">
+                        Close
+                    </flux:button>
                 </flux:timeline.content>
             </flux:timeline.item>
         </flux:timeline>
@@ -516,16 +522,26 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                                 role="menu"
                             >
                                 @if ($ticket->scanned_at)
-                                    <button type="button" wire:click="undoTicketScan({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">Undo scan</button>
+                                    <button type="button" wire:click="undoTicketScan({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                                        <span class="fas fa-qrcode mr-2" aria-hidden="true"></span>Undo scan
+                                    </button>
                                 @else
-                                    <button type="button" wire:click="markTicketAsScanned({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">Mark as scanned</button>
+                                    <button type="button" wire:click="markTicketAsScanned({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                                        <span class="fas fa-qrcode mr-2" aria-hidden="true"></span>Mark as scanned
+                                    </button>
                                 @endif
                                 @if ($ticket->revoked_at)
-                                    <button type="button" wire:click="reinstateTicket({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">Reinstate</button>
+                                    <button type="button" wire:click="reinstateTicket({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                                        <span class="fas fa-circle-check mr-2" aria-hidden="true"></span>Reinstate
+                                    </button>
                                 @else
-                                    <button type="button" wire:click="revokeTicket({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30" role="menuitem">Revoke</button>
+                                    <button type="button" wire:click="revokeTicket({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30" role="menuitem">
+                                        <span class="fas fa-ban mr-2" aria-hidden="true"></span>Revoke
+                                    </button>
                                 @endif
-                                <button type="button" wire:click="confirmDeleteTicket({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30" role="menuitem">Delete</button>
+                                <button type="button" wire:click="confirmDeleteTicket({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30" role="menuitem">
+                                    <span class="fas fa-trash-can mr-2" aria-hidden="true"></span>Delete
+                                </button>
                             </div>
                         </div>
                     </td>
