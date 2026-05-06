@@ -1,4 +1,47 @@
-<h1>Your {{ $year }} Golden Ticket is here!</h1>
+<style>
+h1 {
+    margin: 0 0 4px;
+}
+
+h2 {
+    margin: 12px 0 4px;
+}
+
+p {
+    margin: 6px 0 0;
+}
+
+ul {
+    margin: 4px 0 0;
+    padding-left: 22px;
+}
+
+li {
+    margin: 2px 0 0;
+}
+
+@media print {
+    .gt-print-page-break {
+        break-before: page;
+        page-break-before: always;
+    }
+
+    .gt-print-ticket {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-top: 0 !important;
+    }
+
+    .gt-print-ticket td,
+    .gt-print-ticket tr,
+    .gt-print-ticket img,
+    .gt-print-ticket p {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+</style>
+
 <p>Hi {{ $first_name }}!</p>
 <p>This email contains your Golden Ticket at the very bottom of this message (also attached as a PDF), which is needed to enter the volunteer pre-sale on <strong>{{ $presale_date }}</strong>. Please be prepared to show this QR code before you enter the pre-sale. You can either have it on your mobile device or printed on paper. If you print or screenshot, please make sure the six-digit serial number is also visible. Volunteers will be able to look up your record if you aren't able to or forget to bring your QR code with you.</p>
 <p>
@@ -48,11 +91,10 @@
 <p>The Plant Sale counts on over 2,000 volunteers and 10,000 volunteer hours every year to support Friends School of Minnesota. Thank you for being an important part of what makes the Plant Sale successful. We appreciate you and your support, and we look forward to welcoming you to the volunteer pre-sale on {{ $presale_date }}.</p>
 <p>If you have any questions or if you need help with your Golden Ticket, please email <a href="mailto:signup@friendsschoolplantsale.com">signup@friendsschoolplantsale.com</a>.</p>
 <p>On behalf of everyone on the Plant Sale committee, thank you for volunteering with us!</p>
-<hr style="margin-top: 12px; margin-bottom: 12px;" />
-<table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" style="margin-left: auto; margin-right: auto; break-inside: avoid-page; page-break-inside: avoid; border-collapse: collapse; border-spacing: 0; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+<table role="presentation" align="center" border="0" cellpadding="0" cellspacing="0" class="gt-print-page-break gt-print-ticket" style="margin-left: auto; margin-right: auto; margin-top: 4px; break-inside: avoid-page; page-break-inside: avoid; border-collapse: collapse; border-spacing: 0; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
     @if ($ticket->priority)
         <tr>
-            <td align="center" style="padding: 0 0 10px 0; border: 0; margin: 0;">
+            <td align="center" style="padding: 0; border: 0; margin: 0;">
                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="width: 260px; border-collapse: collapse; border-spacing: 0; mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
                     <tr>
                         <td style="color: #ffffff; background-color: #9333EA; padding: 4px; text-align: center; font-size: 20px; border: 0; margin: 0;">
@@ -65,15 +107,7 @@
     @endif
     <tr>
         <td align="center" style="padding: 0; border: 0; margin: 0;">
-            <div style="position: relative; width: 260px; height: 260px;">
-                <img src="{{ $message->embedData($qrcode, 'qrcode.png', 'image/png') }}" style="width: 100%; height: 100%; display: block;">
-                @if (! empty($qr_center_icon))
-                    <img
-                        src="{{ $message->embedData($qr_center_icon, str_starts_with($qr_center_icon_mime, 'image/svg') ? 'qr-center-icon.svg' : 'qr-center-icon.png', $qr_center_icon_mime) }}"
-                        style="position: absolute; left: 50%; top: 50%; width: 26%; height: 26%; transform: translate(-50%, -50%); background: #ffffff; border-radius: 9999px; padding: 6px;"
-                    >
-                @endif
-            </div>
+            <img src="{{ $message->embedData($qrcode, 'qrcode.png', 'image/png') }}" style="width: 260px; height: 260px; display: block;">
         </td>
     </tr>
     <tr>

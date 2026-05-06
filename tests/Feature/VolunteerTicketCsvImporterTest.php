@@ -160,6 +160,32 @@ test('importer infers missing shift end time as four hours and supports csvs wit
     expect($secondEnd->format('Y-m-d H:i'))->toBe('2026-05-08 13:30');
 });
 
+test('importer preserves local shift times from csv rows without explicit end times', function () {
+    $csvPath = tempnam(sys_get_temp_dir(), 'volunteer-ticket-import-');
+
+    expect($csvPath)->not->toBeFalse();
+
+    file_put_contents($csvPath, implode("\n", [
+        'Job,Shift start date,Shift start time,Parent ID,Sub-Volunteer ID,Volunteer Identifier,Email,First Name,Last Name,Zip code',
+        '"Greeter, outdoor",5/9/2026,1:15 PM,0,5167248,3347279,z.baelcyr@gmail.com,Zora,Bael-Cyr,55407',
+    ]));
+
+    $summary = app(VolunteerTicketCsvImporter::class)->import($csvPath);
+
+    unlink($csvPath);
+
+    expect($summary['rows_read'])->toBe(1);
+    expect($summary['invalid_rows'])->toBe(0);
+
+    $ticket = Ticket::query()->where('vlid', '3347279')->first();
+
+    expect($ticket)->not->toBeNull();
+    expect($ticket->shifts)->toHaveCount(1);
+    expect($ticket->shifts[0]['job'])->toBe('Greeter, outdoor');
+    expect($ticket->shifts[0]['start'])->toBe('2026-05-09 13:15:00');
+    expect($ticket->shifts[0]['end'])->toBe('2026-05-09 17:15:00');
+});
+
 test('golden ticket manager imports csv through livewire upload workflow', function () {
     $csv = implode("\n", [
         'Job,Shift start date,Shift start time,Shift end time,Volunteer Identifier,Phone (mobile preferred),First Name,Last Name,Email,Zip code',

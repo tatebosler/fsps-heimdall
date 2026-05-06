@@ -24,6 +24,18 @@ class GoldenTicketPdfGenerator
 
     private const PAGE_HEIGHT = 792;
 
+    private const QR_X = 240;
+
+    private const QR_Y = 462;
+
+    private const QR_SIZE = 132;
+
+    private const PRIORITY_BANNER_Y = 444;
+
+    private const SERIAL_NUMBER_Y = 592;
+
+    private const VOLUNTEER_NAME_Y = 616;
+
     public static function filename(Ticket $ticket): string
     {
         $serialNumber = preg_replace('/[^A-Za-z0-9_-]/', '-', $ticket->serial_number ?: (string) $ticket->id);
@@ -59,6 +71,14 @@ class GoldenTicketPdfGenerator
         }
 
         return $result;
+    }
+
+    public static function qrCodePng(Ticket $ticket): string
+    {
+        $qrUrl = 'https://www.friendsschoolplantsale.com/driving?tkt='.base64_encode((string) $ticket->serial_number);
+        $qrPng = self::generateQrPng($qrUrl);
+
+        return self::composeQrCenterIcon($qrPng, self::qrCenterIconPath($ticket));
     }
 
     private static function generateQrPng(string $data): string
@@ -102,17 +122,16 @@ class GoldenTicketPdfGenerator
         }
 
         $pdf->SetFillColor(107, 33, 168);
-        $pdf->Rect(186, 468, 240, 18, 'F');
+        $pdf->Rect(186, self::PRIORITY_BANNER_Y, 240, 18, 'F');
 
         $pdf->SetFont('Helvetica', 'B', 11);
         $pdf->SetTextColor(255, 255, 255);
-        $pdf->SetXY(186, 472);
+        $pdf->SetXY(186, self::PRIORITY_BANNER_Y + 4);
         $pdf->Cell(240, 10, 'GROUP ZERO', 0, 0, 'C');
     }
 
     private static function renderQrCode(Fpdf $pdf, Ticket $ticket): void
     {
-        $qrUrl = 'https://www.friendsschoolplantsale.com/driving?tkt='.base64_encode((string) $ticket->serial_number);
         $qrTmp = tempnam(sys_get_temp_dir(), 'gt_qr_');
 
         if ($qrTmp === false) {
@@ -120,14 +139,9 @@ class GoldenTicketPdfGenerator
         }
 
         try {
-            $qrPng = self::generateQrPng($qrUrl);
+            $qrPng = self::qrCodePng($ticket);
             file_put_contents($qrTmp, $qrPng);
-            $qrX = 240;
-            $qrY = 490;
-            $qrSize = 132;
-
-            $pdf->Image($qrTmp, $qrX, $qrY, $qrSize, $qrSize, 'PNG');
-            self::renderQrCenterIcon($pdf, $ticket, $qrX, $qrY, $qrSize);
+            $pdf->Image($qrTmp, self::QR_X, self::QR_Y, self::QR_SIZE, self::QR_SIZE, 'PNG');
         } finally {
             @unlink($qrTmp);
         }
@@ -137,7 +151,7 @@ class GoldenTicketPdfGenerator
     {
         $pdf->SetFont('Helvetica', 'B', 26);
         $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetXY(0, 620);
+        $pdf->SetXY(0, self::SERIAL_NUMBER_Y);
         $pdf->Cell(self::PAGE_WIDTH, 18, (string) $ticket->serial_number, 0, 0, 'C');
     }
 
@@ -147,25 +161,80 @@ class GoldenTicketPdfGenerator
 
         $pdf->SetFont('Helvetica', 'B', 11);
         $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetXY(0, 644);
+        $pdf->SetXY(0, self::VOLUNTEER_NAME_Y);
         $pdf->Cell(self::PAGE_WIDTH, 11, $displayName, 0, 0, 'C');
     }
 
-    private static function renderQrCenterIcon(Fpdf $pdf, Ticket $ticket, int $qrX, int $qrY, int $qrSize): void
+    private static function composeQrCenterIcon(string $qrPng, string $iconPath): string
     {
-        $centerX = $qrX + (int) ($qrSize / 2);
-        $centerY = $qrY + (int) ($qrSize / 2);
-        $backingSize = 34;
-        $iconSize = 24;
-        $backingX = $centerX - (int) ($backingSize / 2);
-        $backingY = $centerY - (int) ($backingSize / 2);
-        $iconX = $centerX - (int) ($iconSize / 2);
-        $iconY = $centerY - (int) ($iconSize / 2);
+        if (! function_exists('imagecreatefromstring') || ! is_file($iconPath)) {
+            return $qrPng;
+        }
 
-        $pdf->SetFillColor(255, 255, 255);
-        $pdf->Rect($backingX, $backingY, $backingSize, $backingSize, 'F');
+        $qrImage = imagecreatefromstring($qrPng);
+        $iconData = file_get_contents($iconPath);
 
-        $pdf->Image(self::qrCenterIconPath($ticket), $iconX, $iconY, $iconSize, $iconSize, 'PNG');
+        if ($qrImage === false || ! is_string($iconData)) {
+            if ($qrImage !== false) {
+                imagedestroy($qrImage);
+            }
+
+            return $qrPng;
+        }
+
+        $iconImage = imagecreatefromstring($iconData);
+
+        if ($iconImage === false) {
+            imagedestroy($qrImage);
+
+            return $qrPng;
+        }
+
+        imagealphablending($qrImage, true);
+        imagesavealpha($qrImage, true);
+        imagealphablending($iconImage, true);
+        imagesavealpha($iconImage, true);
+
+        $qrWidth = imagesx($qrImage);
+        $qrHeight = imagesy($qrImage);
+        $backingSize = (int) round(min($qrWidth, $qrHeight) * (34 / 132));
+        $iconSize = (int) round(min($qrWidth, $qrHeight) * (24 / 132));
+        $backingX = (int) round(($qrWidth - $backingSize) / 2);
+        $backingY = (int) round(($qrHeight - $backingSize) / 2);
+        $iconX = (int) round(($qrWidth - $iconSize) / 2);
+        $iconY = (int) round(($qrHeight - $iconSize) / 2);
+        $white = imagecolorallocate($qrImage, 255, 255, 255);
+
+        imagefilledrectangle(
+            $qrImage,
+            $backingX,
+            $backingY,
+            $backingX + $backingSize,
+            $backingY + $backingSize,
+            $white,
+        );
+
+        imagecopyresampled(
+            $qrImage,
+            $iconImage,
+            $iconX,
+            $iconY,
+            0,
+            0,
+            $iconSize,
+            $iconSize,
+            imagesx($iconImage),
+            imagesy($iconImage),
+        );
+
+        ob_start();
+        imagepng($qrImage);
+        $rendered = ob_get_clean();
+
+        imagedestroy($iconImage);
+        imagedestroy($qrImage);
+
+        return is_string($rendered) ? $rendered : $qrPng;
     }
 
     private static function presaleSummary(Ticket $ticket): string

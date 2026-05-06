@@ -41,6 +41,31 @@ test('golden ticket pdf generator output changes for priority tickets', function
         ->not->toBe(GoldenTicketPdfGenerator::binary($priorityTicket));
 });
 
+test('golden ticket qr code png includes the centered icon variant', function () {
+    $standardTicket = Ticket::factory()->make([
+        'ps_year' => DateHelpers::psYearForDate(now()),
+        'serial' => '557741',
+        'group_zero' => false,
+        'first_name' => 'Jane',
+        'last_name' => 'Doe',
+    ]);
+
+    $priorityTicket = Ticket::factory()->make([
+        'ps_year' => DateHelpers::psYearForDate(now()),
+        'serial' => '557741',
+        'group_zero' => true,
+        'first_name' => 'Jane',
+        'last_name' => 'Doe',
+    ]);
+
+    $standardQr = GoldenTicketPdfGenerator::qrCodePng($standardTicket);
+    $priorityQr = GoldenTicketPdfGenerator::qrCodePng($priorityTicket);
+
+    expect($standardQr)->toStartWith("\x89PNG\r\n\x1a\n");
+    expect($priorityQr)->toStartWith("\x89PNG\r\n\x1a\n");
+    expect($standardQr)->not->toBe($priorityQr);
+});
+
 test('golden ticket pdf generator output changes when volunteer name changes', function () {
     $namedTicket = Ticket::factory()->make([
         'ps_year' => DateHelpers::psYearForDate(now()),

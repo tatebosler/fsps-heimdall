@@ -281,8 +281,8 @@ class VolunteerTicketCsvImporter
 
         return [
             'job' => trim((string) ($record['job'] ?? '')),
-            'start' => $start->copy()->utc()->toIso8601String(),
-            'end' => $end->copy()->utc()->toIso8601String(),
+            'start' => $start->format('Y-m-d H:i:s'),
+            'end' => $end->format('Y-m-d H:i:s'),
         ];
     }
 
