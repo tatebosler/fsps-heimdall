@@ -63,6 +63,7 @@ Route::prefix('admin')->group(function () {
 
     Route::middleware('admin.tools')->group(function () {
         Route::livewire('/gtmanager', 'gt.golden-ticket-manager')->name('gtmanager');
+        Route::livewire('/ntcodes', 'nt-codes')->name('ntcodes');
         Route::livewire('/historical', 'historical-data-viewer')->name('historical');
         Route::livewire('/entry-io', 'entry-data-io')->name('entry-data-io');
         Route::livewire('/editor', 'data-editor')->name('data-editor');

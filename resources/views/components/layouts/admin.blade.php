@@ -72,6 +72,10 @@
                     <span class="fas fa-pen-to-square"></span>
                     Sync Serial Numbers
                 </flux:sidebar.item>
+                <flux:sidebar.item href="/admin/ntcodes" :current="request()->is('admin/ntcodes')" wire:navigate>
+                    <span class="fas fa-gear"></span>
+                    Nadamoo &amp; Test Codes
+                </flux:sidebar.item>
             </flux:sidebar.group>
 
             <form method="POST" action="{{ route('admin.logout') }}" class="mt-4 px-3">
