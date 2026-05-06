@@ -1,6 +1,7 @@
 import QrScanner from 'qr-scanner';
 
 const qrScannerInstances = new WeakMap();
+const singletonScannerInstances = new WeakMap();
 const qrScannerSounds = {
     scan: new Audio('/sfx/scan.mp3'),
     admit: new Audio('/sfx/admit.mp3'),
@@ -495,13 +496,327 @@ function cleanupQrScannerPages() {
     document.querySelectorAll('[data-qr-scanner-root]').forEach(destroyQrScanner);
 }
 
+function verifySingletonScannerInput(verifyUrl, input, dataSource) {
+    if (isTimeoutTestQrCode(input)) {
+        const timeoutError = new Error('Scan timeout');
+        timeoutError.code = 'SCAN_TIMEOUT';
+
+        return Promise.reject(timeoutError);
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort('timeout'), 5000);
+
+    return fetch(verifyUrl, {
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken(),
+        },
+        body: JSON.stringify({
+            qr_code: input,
+            data_source: dataSource,
+        }),
+        signal: controller.signal,
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`Ticket verification failed with status ${response.status}.`);
+            }
+
+            return response.json();
+        })
+        .catch((error) => {
+            if (error === 'timeout' || error?.name === 'AbortError') {
+                const timeoutError = new Error('Scan timeout');
+                timeoutError.code = 'SCAN_TIMEOUT';
+                throw timeoutError;
+            }
+
+            throw error;
+        })
+        .finally(() => {
+            window.clearTimeout(timeoutId);
+        });
+}
+
+function applySingletonScannerTone(root, tone) {
+    root.classList.remove('bg-gray-950', 'bg-emerald-700', 'bg-purple-700', 'bg-red-700', 'bg-yellow-400', 'text-white', 'text-gray-950');
+
+    switch (tone) {
+        case 'success':
+            root.classList.add('bg-emerald-700', 'text-white');
+            break;
+        case 'priority':
+            root.classList.add('bg-purple-700', 'text-white');
+            break;
+        case 'error':
+            root.classList.add('bg-red-700', 'text-white');
+            break;
+        case 'timeout':
+            root.classList.add('bg-yellow-400', 'text-gray-950');
+            break;
+        default:
+            root.classList.add('bg-gray-950', 'text-white');
+            break;
+    }
+}
+
+function updateSingletonScannerUi(root, options = {}) {
+    const {
+        tone = 'idle',
+        heading = 'READY',
+        name = '',
+        detail = '',
+    } = options;
+
+    const feedbackHeading = root.querySelector('[data-singleton-feedback-heading]');
+    const feedbackName = root.querySelector('[data-singleton-feedback-name]');
+    const feedbackDetail = root.querySelector('[data-singleton-feedback-detail]');
+
+    applySingletonScannerTone(root, tone);
+
+    if (feedbackHeading) {
+        feedbackHeading.textContent = heading;
+    }
+
+    if (feedbackName) {
+        feedbackName.textContent = name;
+        feedbackName.classList.toggle('hidden', name === '');
+    }
+
+    if (feedbackDetail) {
+        feedbackDetail.textContent = detail;
+        feedbackDetail.classList.toggle('hidden', detail === '');
+    }
+}
+
+function renderSingletonScannerLog(root, entries) {
+    const list = root.querySelector('[data-singleton-log]');
+
+    if (!list) {
+        return;
+    }
+
+    if (entries.length === 0) {
+        list.innerHTML = '<li class="rounded-lg border border-white/40 bg-white/70 px-3 py-2 text-gray-900">No scans yet.</li>';
+        return;
+    }
+
+    list.innerHTML = entries
+        .map((entry) => {
+            const escapedInput = entry.input
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;');
+            const escapedResult = entry.result
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;');
+
+            return `<li class="rounded-lg border border-white/40 bg-white/70 px-3 py-2 text-gray-900">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="font-semibold">${escapedResult}</span>
+                    <span class="text-xs text-gray-700">${entry.time}</span>
+                </div>
+                <p class="mt-1 truncate text-xs text-gray-800" title="${escapedInput}">${escapedInput}</p>
+            </li>`;
+        })
+        .join('');
+}
+
+function destroySingletonScanner(root) {
+    const instance = singletonScannerInstances.get(root);
+
+    if (!instance) {
+        return;
+    }
+
+    instance.input.removeEventListener('keydown', instance.handleKeydown);
+    instance.activateSfxButton?.removeEventListener('click', instance.handleActivateSfx);
+    singletonScannerInstances.delete(root);
+}
+
+function initSingletonScanner(root) {
+    if (singletonScannerInstances.has(root)) {
+        return;
+    }
+
+    const input = root.querySelector('[data-singleton-input]');
+    const activateSfxButton = root.parentElement?.querySelector('[data-singleton-activate-sfx]') ?? null;
+
+    if (!input) {
+        return;
+    }
+
+    const verifyUrl = root.dataset.singletonVerifyUrl ?? '/golden-tickets/scan';
+    const dataSource = root.dataset.singletonDataSource ?? 'Nadamoo Live Scanner';
+    let isVerifying = false;
+    let feedbackResetToken = 0;
+    let recentEntries = [];
+
+    const pushLogEntry = (inputValue, result) => {
+        recentEntries = [
+            {
+                input: inputValue,
+                result,
+                time: new Date().toLocaleTimeString(),
+            },
+            ...recentEntries,
+        ].slice(0, 5);
+
+        renderSingletonScannerLog(root, recentEntries);
+    };
+
+    const scheduleReadyReset = (token) => {
+        window.setTimeout(() => {
+            if (feedbackResetToken !== token || isVerifying) {
+                return;
+            }
+
+            updateSingletonScannerUi(root, {
+                tone: 'idle',
+                heading: 'READY',
+                name: '',
+                detail: '',
+            });
+        }, 10000);
+    };
+
+    const handleActivateSfx = async () => {
+        if (!activateSfxButton) {
+            return;
+        }
+
+        activateSfxButton.disabled = true;
+        await activateQrScannerSoundEffects();
+        activateSfxButton.classList.add('hidden');
+    };
+
+    const handleKeydown = async (event) => {
+        if (event.key !== 'Enter') {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (isVerifying) {
+            return;
+        }
+
+        const inputValue = String(input.value ?? '').trim();
+
+        if (inputValue === '') {
+            return;
+        }
+
+        isVerifying = true;
+        feedbackResetToken += 1;
+        const currentResetToken = feedbackResetToken;
+        const soundDelay = delay(750);
+
+        input.value = '';
+
+        await playQrScannerSound('scan');
+        updateSingletonScannerUi(root, {
+            tone: 'idle',
+            heading: 'VERIFYING',
+            detail: 'Checking ticket...',
+        });
+
+        try {
+            const payload = await verifySingletonScannerInput(verifyUrl, inputValue, dataSource);
+            const status = String(payload?.status ?? 'INVALID');
+            const description = describeQrScanResult(payload);
+
+            await soundDelay;
+
+            if (status === 'OK') {
+                await playQrScannerSound('admit');
+            } else if (status === 'OK_GROUP_ZERO') {
+                await playQrScannerSound('priority');
+            } else {
+                await playQrScannerSound('error');
+            }
+
+            updateSingletonScannerUi(root, description);
+            pushLogEntry(inputValue, `${description.heading}${description.name ? ` - ${description.name}` : ''}`);
+            scheduleReadyReset(currentResetToken);
+        } catch (error) {
+            await soundDelay;
+            await playQrScannerSound('error');
+
+            if (error?.code === 'SCAN_TIMEOUT') {
+                updateSingletonScannerUi(root, {
+                    tone: 'timeout',
+                    heading: 'Scan Again - Timeout',
+                    detail: 'Please try the same ticket again.',
+                });
+                pushLogEntry(inputValue, 'TIMEOUT');
+                scheduleReadyReset(currentResetToken);
+            } else {
+                updateSingletonScannerUi(root, {
+                    tone: 'error',
+                    heading: 'ERROR',
+                    detail: 'Unable to verify this scan right now.',
+                });
+                pushLogEntry(inputValue, 'ERROR');
+                scheduleReadyReset(currentResetToken);
+                console.error('Singleton scanner verification failed:', error);
+            }
+        } finally {
+            isVerifying = false;
+            input.focus();
+        }
+    };
+
+    input.addEventListener('keydown', handleKeydown);
+    activateSfxButton?.addEventListener('click', handleActivateSfx);
+
+    singletonScannerInstances.set(root, {
+        input,
+        handleKeydown,
+        activateSfxButton,
+        handleActivateSfx,
+    });
+
+    updateSingletonScannerUi(root, {
+        tone: 'idle',
+        heading: 'READY',
+        detail: '',
+    });
+    renderSingletonScannerLog(root, []);
+    input.focus();
+}
+
+function initSingletonScannerPages() {
+    document.querySelectorAll('[data-singleton-scanner-root]').forEach(initSingletonScanner);
+}
+
+function cleanupSingletonScannerPages() {
+    document.querySelectorAll('[data-singleton-scanner-root]').forEach(destroySingletonScanner);
+}
+
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function (error) {
         console.warn('Service worker registration failed:', error);
     });
 }
 
-document.addEventListener('DOMContentLoaded', initQrScannerPages);
-document.addEventListener('livewire:navigated', initQrScannerPages);
-document.addEventListener('livewire:navigating', cleanupQrScannerPages);
-window.addEventListener('beforeunload', cleanupQrScannerPages);
+document.addEventListener('DOMContentLoaded', () => {
+    initQrScannerPages();
+    initSingletonScannerPages();
+});
+document.addEventListener('livewire:navigated', () => {
+    initQrScannerPages();
+    initSingletonScannerPages();
+});
+document.addEventListener('livewire:navigating', () => {
+    cleanupQrScannerPages();
+    cleanupSingletonScannerPages();
+});
+window.addEventListener('beforeunload', () => {
+    cleanupQrScannerPages();
+    cleanupSingletonScannerPages();
+});

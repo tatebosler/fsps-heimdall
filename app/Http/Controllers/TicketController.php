@@ -74,9 +74,15 @@ class TicketController extends Controller
     {
         $validated = $request->validate([
             'qr_code' => ['required', 'string'],
+            'data_source' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $result = $verifier->scan($validated['qr_code']);
+        $scanInput = trim($validated['qr_code']);
+        $dataSource = $validated['data_source'] ?? null;
+
+        $result = preg_match('/^\d{6}$/', $scanInput) === 1
+            ? $verifier->scanSerialNumber($scanInput, $dataSource)
+            : $verifier->scan($scanInput, $dataSource);
 
         return response()->json($result);
     }

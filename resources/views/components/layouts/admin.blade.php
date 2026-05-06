@@ -56,21 +56,21 @@
             <flux:sidebar.spacer class="my-2" />
 
             <flux:sidebar.group heading="Golden Tickets" icon="ticket">
-                <flux:sidebar.item href="/gtscanner" :current="request()->is('gtscanner')" wire:navigate>
-                    <span class="fas fa-qrcode"></span>
-                    Ticket Scanning
-                </flux:sidebar.item>
                 <flux:sidebar.item href="/admin/gtmanager" :current="request()->is('admin/gtmanager')">
                     <span class="fas fa-ticket"></span>
                     Ticket Management
                 </flux:sidebar.item>
-                <flux:sidebar.item href="/admin/nadamoo-sync" :current="request()->is('admin/nadamoo-sync')" wire:navigate>
-                    <span class="fas fa-upload"></span>
-                    Sync from Nadamoo
+                <flux:sidebar.item href="/gtscanner" :current="request()->is('gtscanner')" wire:navigate>
+                    <span class="fas fa-expand"></span>
+                    Scan tickets via browser
                 </flux:sidebar.item>
-                <flux:sidebar.item href="/admin/serial-number-scan" :current="request()->is('admin/serial-number-scan')" wire:navigate>
-                    <span class="fas fa-pen-to-square"></span>
-                    Sync Serial Numbers
+                <flux:sidebar.item href="/admin/singleton" :current="request()->is('admin/singleton')" wire:navigate>
+                    <span class="fas fa-qrcode"></span>
+                    Scan via Nadamoo
+                </flux:sidebar.item>
+                <flux:sidebar.item href="/admin/bulk-scan" :current="request()->is('admin/bulk-scan')" wire:navigate>
+                    <span class="fas fa-cloud-arrow-up"></span>
+                    Offline Scanner Sync
                 </flux:sidebar.item>
                 <flux:sidebar.item href="/admin/ntcodes" :current="request()->is('admin/ntcodes')" wire:navigate>
                     <span class="fas fa-gear"></span>

@@ -67,6 +67,7 @@ Route::prefix('admin')->group(function () {
         Route::livewire('/historical', 'historical-data-viewer')->name('historical');
         Route::livewire('/entry-io', 'entry-data-io')->name('entry-data-io');
         Route::livewire('/editor', 'data-editor')->name('data-editor');
+        Route::livewire('/singleton', 'singleton-scanner')->name('singleton-scanner');
         Route::livewire('/tower', 'tower')->name('tower');
         Route::livewire('/wb', 'wristband-booth')->name('wristband-booth');
         Route::get('/tickets/{ticket}/pdf', function (Ticket $ticket) {
