@@ -21,6 +21,8 @@ Route::livewire('/gtscanner', 'qr-scanner')->name('gtscanner');
 Route::post('/golden-tickets/scan', [TicketController::class, 'scan'])->name('golden-tickets.scan');
 
 Route::prefix('admin')->group(function () {
+    Route::redirect('', '/admin/wb');
+
     Route::get('/login', function (): RedirectResponse|View {
         if (session(AdminToolsAuth::SESSION_KEY, false)) {
             return redirect()->to('/admin/wb');

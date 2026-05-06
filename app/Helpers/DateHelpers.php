@@ -89,6 +89,26 @@ class DateHelpers
         return null;
     }
 
+    public static function saleHasJustClosed(DateTimeInterface $date, int $minutesAfterClose = 15): bool
+    {
+        $dateToCheck = Carbon::instance($date);
+
+        if (! self::isPlantSaleOpenOnDate($dateToCheck)) {
+            return false;
+        }
+
+        $hours = config('ps.hours.'.$dateToCheck->format('l'));
+
+        if (! is_array($hours) || ! isset($hours['close'])) {
+            return false;
+        }
+
+        $saleClose = self::psDayForCalendarYear($dateToCheck->year, $dateToCheck->dayOfWeekIso)
+            ->setTimeFromTimeString($hours['close']);
+
+        return $dateToCheck->betweenIncluded($saleClose, $saleClose->copy()->addMinutes($minutesAfterClose));
+    }
+
     public static function dayStringToNumber(string $day): int
     {
         return match (strtolower($day)) {

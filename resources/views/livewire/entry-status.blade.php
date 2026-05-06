@@ -244,10 +244,10 @@ new #[Title('Entry Status')] class extends Component
                             <p class="mt-4 text-center text-xl font-semibold">Wristband distribution beginning shortly...</p>
                         @else
                             <div class="mt-4 flex flex-col gap-2 sm:grid sm:grid-cols-4 sm:text-center">
-                                <div class="flex items-baseline justify-between rounded-lg bg-gray-900/40 p-3 sm:block">
+                                <div x-bind:class="days() < 1 ? 'hidden sm:block' : 'flex sm:block'" class="items-baseline justify-between rounded-lg bg-gray-900/40 p-3">
                                     <p class="text-3xl font-black" x-text="days()"></p>
                                     <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
-                                        <span class="sm:hidden">days</span>
+                                        <span class="sm:hidden" x-text="days() === 1 ? 'day' : 'days'"></span>
                                         <span class="hidden sm:inline md:hidden">days</span>
                                         <span class="hidden md:inline" x-text="days() === 1 ? 'day' : 'days'"></span>
                                     </p>
@@ -255,7 +255,7 @@ new #[Title('Entry Status')] class extends Component
                                 <div class="flex items-baseline justify-between rounded-lg bg-gray-900/40 p-3 sm:block">
                                     <p class="text-3xl font-black" x-text="format(hours())"></p>
                                     <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
-                                        <span class="sm:hidden">hours</span>
+                                        <span class="sm:hidden" x-text="hours() === 1 ? 'hour' : 'hours'"></span>
                                         <span class="hidden sm:inline md:hidden">hrs</span>
                                         <span class="hidden md:inline" x-text="hours() === 1 ? 'hour' : 'hours'"></span>
                                     </p>
@@ -263,7 +263,7 @@ new #[Title('Entry Status')] class extends Component
                                 <div class="flex items-baseline justify-between rounded-lg bg-gray-900/40 p-3 sm:block">
                                     <p class="text-3xl font-black" x-text="format(minutes())"></p>
                                     <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
-                                        <span class="sm:hidden">minutes</span>
+                                        <span class="sm:hidden" x-text="minutes() === 1 ? 'minute' : 'minutes'"></span>
                                         <span class="hidden sm:inline md:hidden">min</span>
                                         <span class="hidden md:inline" x-text="minutes() === 1 ? 'minute' : 'minutes'"></span>
                                     </p>
@@ -271,7 +271,7 @@ new #[Title('Entry Status')] class extends Component
                                 <div class="flex items-baseline justify-between rounded-lg bg-gray-900/40 p-3 sm:block">
                                     <p class="text-3xl font-black" x-text="format(seconds())"></p>
                                     <p class="text-xs uppercase tracking-[0.2em] sm:mt-1">
-                                        <span class="sm:hidden">seconds</span>
+                                        <span class="sm:hidden" x-text="seconds() === 1 ? 'second' : 'seconds'"></span>
                                         <span class="hidden sm:inline md:hidden">sec</span>
                                         <span class="hidden md:inline" x-text="seconds() === 1 ? 'second' : 'seconds'"></span>
                                     </p>

@@ -102,6 +102,18 @@ test('nextWristbandDistributionStart returns null when no configured sale day st
     expect($nextWristbandStart)->toBeNull();
 });
 
+test('saleHasJustClosed returns true from the sale close through fifteen minutes after close', function () {
+    expect(DateHelpers::saleHasJustClosed(Carbon::create(2026, 5, 7, 20, 30, 0)))->toBeTrue();
+    expect(DateHelpers::saleHasJustClosed(Carbon::create(2026, 5, 7, 20, 31, 0)))->toBeTrue();
+    expect(DateHelpers::saleHasJustClosed(Carbon::create(2026, 5, 7, 20, 45, 0)))->toBeTrue();
+});
+
+test('saleHasJustClosed returns false before close, after the reset window, and on non-sale dates', function () {
+    expect(DateHelpers::saleHasJustClosed(Carbon::create(2026, 5, 7, 20, 29, 59)))->toBeFalse();
+    expect(DateHelpers::saleHasJustClosed(Carbon::create(2026, 5, 7, 20, 46, 0)))->toBeFalse();
+    expect(DateHelpers::saleHasJustClosed(Carbon::create(2026, 5, 14, 20, 31, 0)))->toBeFalse();
+});
+
 test('ps weekday calculations use calendar year for 2025-12-31 when ISO year is 2026', function () {
     $date = Carbon::create(2025, 12, 31);
 

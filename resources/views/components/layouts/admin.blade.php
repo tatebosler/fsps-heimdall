@@ -39,6 +39,14 @@
                     <span class="fas fa-tower-observation"></span>
                     Tower
                 </flux:sidebar.item>
+                <flux:sidebar.item href="/estimates" :current="request()->is('estimates')">
+                    <span class="fas fa-chart-bar"></span>
+                    Estimated Entry Times
+                </flux:sidebar.item>
+                <flux:sidebar.item href="/notifications" :current="request()->is('notifications')">
+                    <span class="fas fa-comment-sms"></span>
+                    Sign up for texts
+                </flux:sidebar.item>
                 <flux:sidebar.item href="/admin/editor" :current="request()->is('admin/editor')">
                     <span class="fas fa-table-cells-large"></span>
                     Manual Data Editor
