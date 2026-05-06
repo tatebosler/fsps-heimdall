@@ -46,14 +46,6 @@ new #[Layout('components.layouts.app')] #[Title('QR Code Scanner')] class extend
             <p data-qr-feedback-heading class="text-4xl font-black tracking-[0.2em] sm:text-6xl">READY</p>
             <p data-qr-feedback-name class="mt-3 hidden text-2xl font-semibold sm:text-4xl"></p>
             <p data-qr-feedback-detail class="mt-3 hidden text-sm text-white/80 sm:text-base"></p>
-
-            <button
-                type="button"
-                data-qr-acknowledge
-                class="mt-6 hidden rounded-xl bg-white px-5 py-3 text-base font-semibold text-gray-900 shadow-lg transition hover:bg-gray-100"
-            >
-                Acknowledge
-            </button>
         </div>
     </div>
 </div>

@@ -162,7 +162,7 @@ function describeQrScanResult(payload) {
                 heading: 'INVALID',
                 name: '',
                 detail: 'This ticket is not recognized.',
-                requiresAcknowledgement: true,
+                requiresAcknowledgement: false,
             };
     }
 }
@@ -195,7 +195,7 @@ function updateQrScannerUi(root, options = {}) {
         tone = 'idle',
         heading = scanning ? 'SCANNER ACTIVE' : 'READY',
         name = '',
-        detail = scanning ? 'Point the camera at a Golden Ticket QR code.' : '',
+        detail = '',
         requiresAcknowledgement = false,
     } = options;
 
@@ -243,10 +243,6 @@ function updateQrScannerUi(root, options = {}) {
         feedbackDetail.textContent = detail;
         feedbackDetail.classList.toggle('hidden', detail === '');
     }
-
-    if (acknowledgeButton) {
-        acknowledgeButton.classList.toggle('hidden', !requiresAcknowledgement);
-    }
 }
 
 function destroyQrScanner(root) {
@@ -258,7 +254,6 @@ function destroyQrScanner(root) {
 
     instance.toggleButton.removeEventListener('click', instance.handleToggle);
     instance.activateSfxButton?.removeEventListener('click', instance.handleActivateSfx);
-    instance.acknowledgeButton?.removeEventListener('click', instance.handleAcknowledge);
     instance.scanner.destroy();
     qrScannerInstances.delete(root);
 }
@@ -286,7 +281,7 @@ function initQrScanner(root) {
 
     const scheduleReadyReset = (token) => {
         window.setTimeout(() => {
-            if (feedbackResetToken !== token || isVerifying || requiresAcknowledgement || lastScannedData !== null) {
+            if (feedbackResetToken !== token || isVerifying || lastScannedData !== null) {
                 return;
             }
 
@@ -294,9 +289,7 @@ function initQrScanner(root) {
                 scanning: root.dataset.scanning === 'true',
                 tone: 'idle',
                 heading: root.dataset.scanning === 'true' ? 'SCANNER ACTIVE' : 'READY',
-                detail: root.dataset.scanning === 'true'
-                    ? 'Point the camera at a Golden Ticket QR code.'
-                    : '',
+                detail: '',
             });
         }, 10000);
     };
@@ -306,7 +299,7 @@ function initQrScanner(root) {
         async (result) => {
             const scannedData = typeof result === 'string' ? result : result?.data ?? null;
 
-            if (!scannedData || scannedData === lastScannedData || isVerifying || requiresAcknowledgement) {
+            if (!scannedData || scannedData === lastScannedData || isVerifying) {
                 return;
             }
 
@@ -348,9 +341,7 @@ function initQrScanner(root) {
                     ...description,
                 });
 
-                if (!requiresAcknowledgement) {
-                    scheduleReadyReset(currentResetToken);
-                }
+                scheduleReadyReset(currentResetToken);
             } catch (error) {
                 console.error('Unable to verify scanned QR code:', error);
                 await soundDelay;
@@ -368,25 +359,13 @@ function initQrScanner(root) {
                     });
 
                     scheduleReadyReset(currentResetToken);
-                } else {
-                    requiresAcknowledgement = true;
-
-                    updateQrScannerUi(root, {
-                        scanning: true,
-                        tone: 'error',
-                        heading: 'VERIFICATION FAILED',
-                        detail: 'Tap acknowledge to continue.',
-                        requiresAcknowledgement: true,
-                    });
                 }
             } finally {
-                if (!requiresAcknowledgement) {
-                    window.setTimeout(() => {
-                        if (lastScannedData === scannedData) {
-                            lastScannedData = null;
-                        }
-                    }, 3000);
-                }
+                window.setTimeout(() => {
+                    if (lastScannedData === scannedData) {
+                        lastScannedData = null;
+                    }
+                }, 3000);
 
                 isVerifying = false;
             }
@@ -414,9 +393,7 @@ function initQrScanner(root) {
             scanning: root.dataset.scanning === 'true',
             tone: 'idle',
             heading: root.dataset.scanning === 'true' ? 'SCANNER ACTIVE' : 'READY',
-            detail: root.dataset.scanning === 'true'
-                ? 'Point the camera at a Golden Ticket QR code.'
-                : 'Tap start to begin scanning.',
+            detail: '',
         });
     };
 
@@ -453,9 +430,7 @@ function initQrScanner(root) {
                 tone: 'error',
                 heading: 'CAMERA UNAVAILABLE',
                 detail: 'Camera requires HTTPS or a supported localhost browser.',
-                requiresAcknowledgement: true,
             });
-            requiresAcknowledgement = true;
 
             return;
         }
@@ -478,17 +453,15 @@ function initQrScanner(root) {
                 scanning: true,
                 tone: 'idle',
                 heading: 'SCANNER ACTIVE',
-                detail: 'Point the camera at a Golden Ticket QR code.',
+                detail: '',
             });
         } catch (error) {
             console.error('Unable to start QR scanner:', error);
-            requiresAcknowledgement = true;
             updateQrScannerUi(root, {
                 scanning: false,
                 tone: 'error',
                 heading: 'CAMERA ERROR',
-                detail: 'Tap acknowledge to continue.',
-                requiresAcknowledgement: true,
+                detail: 'Unable to access camera. Check permissions and try again.',
             });
         } finally {
             isStarting = false;
@@ -497,7 +470,6 @@ function initQrScanner(root) {
 
     toggleButton.addEventListener('click', handleToggle);
     activateSfxButton?.addEventListener('click', handleActivateSfx);
-    acknowledgeButton?.addEventListener('click', handleAcknowledge);
 
     qrScannerInstances.set(root, {
         scanner,
@@ -505,8 +477,6 @@ function initQrScanner(root) {
         handleToggle,
         activateSfxButton,
         handleActivateSfx,
-        acknowledgeButton,
-        handleAcknowledge,
     });
 
     updateQrScannerUi(root, {

@@ -30,8 +30,8 @@ class GoldenTicketScanVerifier
         }
 
         $ticket = Ticket::query()
-            ->where('year', now()->year)
-            ->where('serial_number', $serialNumber)
+            ->where('ps_year', DateHelpers::psYearForDate(now()))
+            ->where('serial', $serialNumber)
             ->first();
 
         if ($ticket === null) {
@@ -50,7 +50,7 @@ class GoldenTicketScanVerifier
             $ticket->forceFill(['scanned_at' => now()])->save();
         }
 
-        return $this->scanPayload($ticket->priority ? 'OK_GROUP_ZERO' : 'OK', $ticket->first_name);
+        return $this->scanPayload($ticket->group_zero ? 'OK_GROUP_ZERO' : 'OK', $ticket->first_name);
     }
 
     /**
@@ -59,8 +59,8 @@ class GoldenTicketScanVerifier
     public function scanSerialNumber(string $serialNumber): array
     {
         $ticket = Ticket::query()
-            ->where('year', now()->year)
-            ->where('serial_number', $serialNumber)
+            ->where('ps_year', DateHelpers::psYearForDate(now()))
+            ->where('serial', $serialNumber)
             ->first();
 
         if ($ticket === null) {
@@ -79,7 +79,7 @@ class GoldenTicketScanVerifier
             $ticket->forceFill(['scanned_at' => now()])->save();
         }
 
-        return $this->scanPayload($ticket->priority ? 'OK_GROUP_ZERO' : 'OK', $ticket->first_name);
+        return $this->scanPayload($ticket->group_zero ? 'OK_GROUP_ZERO' : 'OK', $ticket->first_name);
     }
 
     /**
