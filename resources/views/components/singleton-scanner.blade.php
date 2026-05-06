@@ -48,7 +48,7 @@ new #[Layout('components.layouts.admin')] #[Title('Singleton Scanner')] class ex
                 <flux:timeline.indicator>1</flux:timeline.indicator>
                 <flux:timeline.content class="space-y-2">
                     <p class="text-lg font-bold">Configure Nadamoo scanner in Bluetooth mode with storage disabled</p>
-                    <p class="text-current">Scan these QR codes, one at a time, with the Nadamoo scanner you wish to use. Don't forget to complete the Bluetooth pairing process on your device.</p>
+                    <p class="text-current">Scan these QR codes, one at a time, with the Nadamoo scanner you wish to use. Don't forget to complete the Bluetooth pairing process on your device. Nadamoo scanners typically appear as Bluetooth keyboards.</p>
                 </flux:timeline.content>
             </flux:timeline.item>
 
@@ -103,8 +103,7 @@ new #[Layout('components.layouts.admin')] #[Title('Singleton Scanner')] class ex
             <flux:timeline.item>
                 <flux:timeline.indicator>2</flux:timeline.indicator>
                 <flux:timeline.content class="space-y-2">
-                    <p class="text-lg font-bold">Place your cursor in the input below, then scan one code at a time</p>
-                    <p class="text-current">This field accepts full QR URL payloads and six-digit serial numbers.</p>
+                    <p class="text-lg font-bold">Place your cursor in the input below, then scan one code at a time or type a six-digit serial number</p>
 
                     <div class="max-w-2xl space-y-2">
                         <label for="singleton-scan-input" class="block text-sm font-semibold uppercase tracking-wide text-current">Scan Input</label>
