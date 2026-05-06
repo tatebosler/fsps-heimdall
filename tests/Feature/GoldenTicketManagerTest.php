@@ -218,3 +218,48 @@ test('download scan report action returns a csv download', function () {
         ->call('downloadScanReport')
         ->assertFileDownloaded("golden-ticket-scan-report-{$calendarYear}.csv");
 });
+
+test('open print master ticket list modal initializes print options', function () {
+    Livewire::test('gt.golden-ticket-manager')
+        ->set('masterTicketListSort', 'serial_number')
+        ->set('masterTicketListGroupZeroFirst', true)
+        ->set('masterTicketListOrientation', 'landscape')
+        ->call('openPrintMasterTicketListModal')
+        ->assertSet('masterTicketListSort', 'last_name')
+        ->assertSet('masterTicketListGroupZeroFirst', false)
+        ->assertSet('masterTicketListOrientation', 'portrait');
+});
+
+test('print master ticket list action returns a pdf download', function () {
+    $activeYear = DateHelpers::psYearForDate(now());
+    $calendarYear = DateHelpers::calendarYearForPsYear($activeYear);
+
+    Ticket::factory()->create([
+        'ps_year' => $activeYear,
+        'first_name' => 'Aly',
+        'last_name' => 'Zimmer',
+        'group_zero' => false,
+        'serial' => '912345',
+        'vlid' => 'VL-100',
+        'phone' => '555-111-1111',
+        'email' => 'aly@example.com',
+    ]);
+
+    Ticket::factory()->create([
+        'ps_year' => $activeYear,
+        'first_name' => 'Bryn',
+        'last_name' => 'Able',
+        'group_zero' => true,
+        'serial' => '012345',
+        'vlid' => 'VL-200',
+        'phone' => '555-222-2222',
+        'email' => 'bryn@example.com',
+    ]);
+
+    Livewire::test('gt.golden-ticket-manager')
+        ->set('masterTicketListSort', 'last_name')
+        ->set('masterTicketListGroupZeroFirst', true)
+        ->set('masterTicketListOrientation', 'landscape')
+        ->call('printMasterTicketList')
+        ->assertFileDownloaded("golden-ticket-master-list-{$calendarYear}.pdf");
+});

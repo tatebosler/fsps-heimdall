@@ -3,6 +3,7 @@
 use App\Helpers\DateHelpers;
 use App\Helpers\VolunteerTicketCsvImporter;
 use App\Models\Ticket;
+use Fpdf\Fpdf;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Layout;
@@ -48,6 +49,12 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
      */
     public ?array $importSummary = null;
 
+    public string $masterTicketListSort = 'last_name';
+
+    public bool $masterTicketListGroupZeroFirst = false;
+
+    public string $masterTicketListOrientation = 'portrait';
+
     public function mount(): void
     {
         $this->selectedPsYear = DateHelpers::psYearForDate(now());
@@ -86,6 +93,7 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
     public function closeModals(): void
     {
         $this->modal('import-tickets')->close();
+        $this->modal('print-master-ticket-list')->close();
         $this->modal('delete-ticket-confirmation')->close();
         $this->modal('delete-all-tickets-confirmation')->close();
     }
@@ -319,6 +327,165 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
         ]);
     }
 
+    public function openPrintMasterTicketListModal(): void
+    {
+        $this->masterTicketListSort = 'last_name';
+        $this->masterTicketListGroupZeroFirst = false;
+        $this->masterTicketListOrientation = 'portrait';
+
+        $this->resetValidation([
+            'masterTicketListSort',
+            'masterTicketListGroupZeroFirst',
+            'masterTicketListOrientation',
+        ]);
+
+        $this->modal('print-master-ticket-list')->show();
+    }
+
+    public function printMasterTicketList(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $validated = $this->validate([
+            'masterTicketListSort' => ['required', 'in:first_name,last_name,serial_number'],
+            'masterTicketListGroupZeroFirst' => ['required', 'boolean'],
+            'masterTicketListOrientation' => ['required', 'in:portrait,landscape'],
+        ]);
+
+        $query = Ticket::query()
+            ->where('ps_year', $this->selectedPsYear);
+
+        if ((bool) $validated['masterTicketListGroupZeroFirst']) {
+            $query->orderByDesc('group_zero');
+        }
+
+        if ($validated['masterTicketListSort'] === 'first_name') {
+            $query
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->orderBy('serial');
+        }
+
+        if ($validated['masterTicketListSort'] === 'last_name') {
+            $query
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->orderBy('serial');
+        }
+
+        if ($validated['masterTicketListSort'] === 'serial_number') {
+            $query
+                ->orderBy('serial')
+                ->orderBy('last_name')
+                ->orderBy('first_name');
+        }
+
+        $tickets = $query
+            ->orderBy('id')
+            ->get([
+                'first_name',
+                'last_name',
+                'group_zero',
+                'serial',
+                'vlid',
+                'phone',
+                'email',
+            ]);
+
+        $orientation = $validated['masterTicketListOrientation'] === 'landscape' ? 'L' : 'P';
+        $sortLabel = match ($validated['masterTicketListSort']) {
+            'first_name' => 'First name',
+            'last_name' => 'Last name',
+            'serial_number' => 'Serial number',
+        };
+
+        $psYear = $this->selectedPsYear;
+        $calendarYear = DateHelpers::calendarYearForPsYear($psYear);
+        $fileName = "golden-ticket-master-list-{$calendarYear}.pdf";
+
+        $this->modal('print-master-ticket-list')->close();
+
+        return response()->streamDownload(function () use ($tickets, $orientation, $calendarYear, $sortLabel, $validated): void {
+            $encodeValue = static function (?string $value): string {
+                $trimmed = trim((string) $value);
+
+                if ($trimmed === '') {
+                    return '';
+                }
+
+                $encoded = @iconv('UTF-8', 'windows-1252//TRANSLIT', $trimmed);
+
+                if ($encoded === false) {
+                    return preg_replace('/[^\x20-\x7E]/', '?', $trimmed) ?? '';
+                }
+
+                return $encoded;
+            };
+
+            $pdf = new Fpdf($orientation, 'mm', 'Letter');
+            $pdf->SetMargins(10, 10, 10);
+            $pdf->SetAutoPageBreak(true, 10);
+            $pdf->AddPage();
+
+            $columnWidths = $orientation === 'L'
+                ? [30, 30, 18, 24, 30, 38, 69]
+                : [24, 24, 18, 20, 22, 30, 52];
+
+            $renderHeader = static function (Fpdf $pdf, array $columnWidths, callable $encodeValue): void {
+                $pdf->SetFillColor(241, 245, 249);
+
+                $pdf->SetFont('Helvetica', 'B', 10);
+                $pdf->Cell($columnWidths[0], 8, $encodeValue('First name'), 1, 0, 'L', true);
+                $pdf->Cell($columnWidths[1], 8, $encodeValue('Last name'), 1, 0, 'L', true);
+                $pdf->Cell($columnWidths[2], 8, $encodeValue('Group Zero?'), 1, 0, 'L', true);
+                $pdf->Cell($columnWidths[3], 8, $encodeValue('Serial number'), 1, 0, 'L', true);
+
+                $pdf->SetFont('Helvetica', 'B', 9);
+                $pdf->Cell($columnWidths[4], 8, $encodeValue('VLID'), 1, 0, 'L', true);
+                $pdf->Cell($columnWidths[5], 8, $encodeValue('Phone number'), 1, 0, 'L', true);
+                $pdf->Cell($columnWidths[6], 8, $encodeValue('Email address'), 1, 1, 'L', true);
+            };
+
+            $pdf->SetFont('Helvetica', 'B', 13);
+            $pdf->Cell(0, 8, $encodeValue("Golden Ticket Master List ({$calendarYear})"), 0, 1);
+
+            $pdf->SetFont('Helvetica', '', 9);
+            $pdf->Cell(0, 6, $encodeValue('Sort: '.$sortLabel), 0, 1);
+            $pdf->Cell(0, 6, $encodeValue('Group Zero first: '.($validated['masterTicketListGroupZeroFirst'] ? 'Yes' : 'No')), 0, 1);
+            $pdf->Ln(2);
+
+            $renderHeader($pdf, $columnWidths, $encodeValue);
+
+            foreach ($tickets as $ticket) {
+                $lineHeight = 8;
+
+                if ($pdf->GetY() + $lineHeight > ($pdf->GetPageHeight() - 10)) {
+                    $pdf->AddPage();
+                    $renderHeader($pdf, $columnWidths, $encodeValue);
+                }
+
+                $pdf->SetFont('Helvetica', 'B', 11);
+                $pdf->Cell($columnWidths[0], $lineHeight, $encodeValue($ticket->first_name), 1, 0, 'L');
+                $pdf->Cell($columnWidths[1], $lineHeight, $encodeValue($ticket->last_name), 1, 0, 'L');
+                $pdf->Cell($columnWidths[2], $lineHeight, $encodeValue($ticket->group_zero ? 'Yes' : 'No'), 1, 0, 'L');
+                $pdf->Cell($columnWidths[3], $lineHeight, $encodeValue($ticket->serial), 1, 0, 'L');
+
+                $pdf->SetFont('Helvetica', '', 9);
+                $pdf->Cell($columnWidths[4], $lineHeight, $encodeValue($ticket->vlid), 1, 0, 'L');
+                $pdf->Cell($columnWidths[5], $lineHeight, $encodeValue($ticket->phone), 1, 0, 'L');
+                $pdf->Cell($columnWidths[6], $lineHeight, $encodeValue($ticket->email), 1, 1, 'L');
+            }
+
+            $output = $pdf->Output('S');
+
+            if (! is_string($output)) {
+                throw new \RuntimeException('Unable to render master ticket list PDF.');
+            }
+
+            echo $output;
+        }, $fileName, [
+            'Content-Type' => 'application/pdf',
+        ]);
+    }
+
     public function openCreateTicketModal(): void
     {
         $this->workingTicket = null;
@@ -493,7 +660,7 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                     <button type="button" wire:click="openImportTicketsModal" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-file-import mr-2" aria-hidden="true"></span>Import tickets from VL
                     </button>
-                    <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                    <button type="button" wire:click="openPrintMasterTicketListModal" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-ticket-alt mr-2" aria-hidden="true"></span>Print master ticket list
                     </button>
 
@@ -618,7 +785,40 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
         </flux:timeline>
     </flux:modal>
 
-    <table class="relative min-w-full divide-y divide-gray-300 dark:divide-white/15">
+    <flux:modal name="print-master-ticket-list" flyout>
+        <h2>Print Master Ticket List</h2>
+
+        <form class="mt-4 space-y-4" wire:submit="printMasterTicketList">
+            <flux:field>
+                <flux:label>Sort</flux:label>
+                <flux:select wire:model="masterTicketListSort">
+                    <option value="first_name">First name</option>
+                    <option value="last_name">Last name</option>
+                    <option value="serial_number">Serial number</option>
+                </flux:select>
+                <flux:error name="masterTicketListSort" />
+            </flux:field>
+
+            <flux:checkbox wire:model="masterTicketListGroupZeroFirst" label="Display Group Zero eligible tickets first" />
+            <flux:error name="masterTicketListGroupZeroFirst" />
+
+            <flux:field>
+                <flux:label>Page orientation</flux:label>
+                <flux:select wire:model="masterTicketListOrientation">
+                    <option value="portrait">Portrait</option>
+                    <option value="landscape">Landscape</option>
+                </flux:select>
+                <flux:error name="masterTicketListOrientation" />
+            </flux:field>
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" x-on:click="$flux.modal('print-master-ticket-list').close()">Cancel</flux:button>
+                <flux:button type="submit" variant="primary">Generate PDF</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
+    <table class="relative min-w-full divide-y divide-gray-400 dark:divide-white/15">
         <thead>
             <tr>
                 <th scope="col" class="py-3.5 pr-3 pl-4 text-left text-sm font-semibold text-gray-900 sm:pl-0 dark:text-white">Ticket</th>
@@ -629,23 +829,23 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                 </th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-white/10">
+        <tbody class="divide-y divide-gray-400 dark:divide-white/15">
             @foreach ($this->tickets as $ticket)
                 <tr wire:key="{{ $ticket->id }}">
-                    <td class="py-4 pr-3 pl-4 text-sm align-top sm:pl-0">
+                    <td class="pt-4 pb-7 pr-3 pl-4 text-sm align-top sm:pl-0">
                         <div class="space-y-1">
                             <p class="font-mono text-2xl">{{ $ticket->serial }}</p>
-                            <p>Global ID: <span class="font-mono">{{ $ticket->id }}</span></p>
+                            <p class="mb-4">Global ID: <span class="font-mono">{{ $ticket->id }}</span></p>
                             @if ($ticket->group_zero)
-                                <flux:badge color="purple" class="mb-1">
+                                <span class="bg-purple-700 text-purple-200 px-3 py-2 rounded">
                                     <span class="fas fa-award mr-1"></span>
                                     Group Zero
-                                </flux:badge>
+                                </span>
                             @else
-                                <flux:badge color="green" class="mb-1">
+                                <span class="bg-green-700 text-green-200 px-3 py-2 rounded">
                                     <span class="fas fa-seedling mr-1"></span>
                                     Standard
-                                </flux:badge>
+                                </span>
                             @endif
                         </div>
                     </td>
