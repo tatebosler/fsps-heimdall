@@ -39,14 +39,6 @@
                     <span class="fas fa-tower-observation"></span>
                     Tower
                 </flux:sidebar.item>
-                <flux:sidebar.item href="/estimates" :current="request()->is('estimates')">
-                    <span class="fas fa-chart-bar"></span>
-                    Estimated Entry Times
-                </flux:sidebar.item>
-                <flux:sidebar.item href="/notifications" :current="request()->is('notifications')">
-                    <span class="fas fa-comment-sms"></span>
-                    Sign up for texts
-                </flux:sidebar.item>
                 <flux:sidebar.item href="/admin/editor" :current="request()->is('admin/editor')">
                     <span class="fas fa-table-cells-large"></span>
                     Manual Data Editor
@@ -58,19 +50,6 @@
                 <flux:sidebar.item href="/admin/entry-io" :current="request()->is('admin/entry-io')">
                     <span class="fas fa-file-arrow-up"></span>
                     Entry Data IO
-                </flux:sidebar.item>
-            </flux:sidebar.group>
-
-            <flux:sidebar.spacer class="my-2" />
-
-            <flux:sidebar.group heading="Coordinator Alerts">
-                <flux:sidebar.item href="/admin/coordinator-channel-registration" :current="request()->is('admin/coordinator-channel-registration')" wire:navigate>
-                    <span class="fas fa-users-gear"></span>
-                    Bulk Channel Registration
-                </flux:sidebar.item>
-                <flux:sidebar.item href="/admin/coordinator-channel-broadcast" :current="request()->is('admin/coordinator-channel-broadcast')" wire:navigate>
-                    <span class="fas fa-bullhorn"></span>
-                    Channel Broadcast
                 </flux:sidebar.item>
             </flux:sidebar.group>
 
@@ -96,6 +75,19 @@
                 <flux:sidebar.item href="/admin/ntcodes" :current="request()->is('admin/ntcodes')" wire:navigate>
                     <span class="fas fa-gear"></span>
                     Nadamoo &amp; Test Codes
+                </flux:sidebar.item>
+            </flux:sidebar.group>
+
+            <flux:sidebar.spacer class="my-2" />
+
+            <flux:sidebar.group heading="Coordinator Alerts">
+                <flux:sidebar.item href="/admin/coordinator-channel-registration" :current="request()->is('admin/coordinator-channel-registration')" wire:navigate>
+                    <span class="fas fa-users-gear"></span>
+                    Bulk Channel Registration
+                </flux:sidebar.item>
+                <flux:sidebar.item href="/admin/coordinator-channel-broadcast" :current="request()->is('admin/coordinator-channel-broadcast')" wire:navigate>
+                    <span class="fas fa-bullhorn"></span>
+                    Channel Broadcast
                 </flux:sidebar.item>
             </flux:sidebar.group>
 
