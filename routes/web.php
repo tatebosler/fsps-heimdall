@@ -1,6 +1,7 @@
 <?php
 
 use App\Helpers\GoldenTicketPdfGenerator;
+use App\Http\Controllers\TicketController;
 use App\Http\Middleware\AdminToolsAuth;
 use App\Models\Ticket;
 use Illuminate\Contracts\View\View;
@@ -15,6 +16,9 @@ Route::redirect('/tos', '/terms');
 Route::livewire('/estimates', 'estimates')->name('estimates');
 Route::livewire('/notifications', 'notification-signup')->name('notifications');
 Route::livewire('/notifications/phone', 'notification-signup')->name('notifications.phone');
+Route::livewire('/gtscanner', 'qr-scanner')->name('gtscanner');
+
+Route::post('/golden-tickets/scan', [TicketController::class, 'scan'])->name('golden-tickets.scan');
 
 Route::prefix('admin')->group(function () {
     Route::get('/login', function (): RedirectResponse|View {

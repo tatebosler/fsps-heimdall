@@ -56,7 +56,7 @@
             <flux:sidebar.spacer class="my-2" />
 
             <flux:sidebar.group heading="Golden Tickets" icon="ticket">
-                <flux:sidebar.item href="/gtscanner" :current="request()->is('gtscan')">
+                <flux:sidebar.item href="/gtscanner" :current="request()->is('gtscanner')" wire:navigate>
                     <span class="fas fa-qrcode"></span>
                     Ticket Scanning
                 </flux:sidebar.item>

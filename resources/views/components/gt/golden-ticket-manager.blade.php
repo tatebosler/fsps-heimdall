@@ -815,9 +815,9 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
 
                     <div class="my-1 border-t border-gray-200 dark:border-white/10"></div>
 
-                    <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                    <a href="{{ route('gtscanner') }}" wire:navigate @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-expand mr-2" aria-hidden="true"></span>Open browser scanner
-                    </button>
+                    </a>
                     <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-qrcode mr-2" aria-hidden="true"></span>Open Nadamoo live scanner
                     </button>
