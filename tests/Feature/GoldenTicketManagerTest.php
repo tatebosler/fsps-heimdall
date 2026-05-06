@@ -339,6 +339,13 @@ test('send all staged tickets sends unsent ticket emails and updates sent_at', f
         'sent_at' => null,
     ]);
 
+    $revokedTicket = Ticket::factory()->create([
+        'ps_year' => $activeYear,
+        'email' => 'revoked@example.com',
+        'sent_at' => null,
+        'revoked_at' => now()->subMinute(),
+    ]);
+
     Livewire::test('gt.golden-ticket-manager')
         ->call('sendAllStagedTickets');
 
@@ -348,11 +355,17 @@ test('send all staged tickets sends unsent ticket emails and updates sent_at', f
     $unsentTicketTwo->refresh();
     $alreadySentTicket->refresh();
     $ticketWithoutEmail->refresh();
+    $revokedTicket->refresh();
 
     expect($unsentTicketOne->sent_at)->not->toBeNull();
     expect($unsentTicketTwo->sent_at)->not->toBeNull();
     expect($alreadySentTicket->sent_at)->not->toBeNull();
     expect($ticketWithoutEmail->sent_at)->toBeNull();
+    expect($revokedTicket->sent_at)->toBeNull();
+
+    Mail::assertNotSent(GoldenTicket::class, function (GoldenTicket $mail) use ($revokedTicket): bool {
+        return $mail->hasTo($revokedTicket->email);
+    });
 });
 
 test('open print master ticket list modal initializes print options', function () {

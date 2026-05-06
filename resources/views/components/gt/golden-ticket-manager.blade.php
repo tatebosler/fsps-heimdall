@@ -686,6 +686,7 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
         Ticket::query()
             ->where('ps_year', $this->selectedPsYear)
             ->whereNull('sent_at')
+            ->whereNull('revoked_at')
             ->whereNotNull('email')
             ->where('email', '<>', '')
             ->orderBy('id')
