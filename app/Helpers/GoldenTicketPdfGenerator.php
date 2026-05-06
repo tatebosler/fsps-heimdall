@@ -378,10 +378,12 @@ class GoldenTicketPdfGenerator
             throw new \RuntimeException('Golden Ticket template PDF is missing.');
         }
 
+        [$density, $quality] = self::getConversionSettings();
+
         $process = new Process([
             'convert',
-            '-density', '300',
-            '-quality', '95',
+            '-density', $density,
+            '-quality', $quality,
             $templatePdfPath.'[0]',
             $templatePngPath,
         ]);
@@ -408,10 +410,12 @@ class GoldenTicketPdfGenerator
             throw new \RuntimeException('Anonymous tickets template PDF is missing.');
         }
 
+        [$density, $quality] = self::getConversionSettings();
+
         $process = new Process([
             'convert',
-            '-density', '300',
-            '-quality', '95',
+            '-density', $density,
+            '-quality', $quality,
             $templatePdfPath.'[0]',
             $templatePngPath,
         ]);
@@ -423,6 +427,15 @@ class GoldenTicketPdfGenerator
         }
 
         return $templatePngPath;
+    }
+
+    private static function getConversionSettings(): array
+    {
+        if (app()->environment('production')) {
+            return ['600', '100'];
+        }
+
+        return ['150', '85'];
     }
 
     private static function qrCenterIconPath(Ticket $ticket): string

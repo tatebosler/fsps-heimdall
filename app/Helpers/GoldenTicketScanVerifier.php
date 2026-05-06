@@ -9,7 +9,7 @@ class GoldenTicketScanVerifier
     /**
      * @return array{status: string, first_name: ?string, message: string}
      */
-    public function scan(string $qrCode): array
+    public function scan(string $qrCode, ?string $dataSource = null): array
     {
         $ticketValue = $this->extractTicketValue($qrCode);
 
@@ -42,12 +42,16 @@ class GoldenTicketScanVerifier
             return $this->scanPayload('REVOKED', $ticket->first_name);
         }
 
-        if ($ticket->scanned_at !== null && $ticket->scanned_at->lt(now()->subMinutes(2))) {
+        if ($ticket->scanned_at !== null && $ticket->scanned_at->lt(now()->subSeconds(30))) {
             return $this->scanPayload('ALREADY_SCANNED', $ticket->first_name);
         }
 
         if ($ticket->scanned_at === null) {
-            $ticket->forceFill(['scanned_at' => now()])->save();
+            $dataSource = $dataSource ?? 'Mobile QR Scanning';
+            $ticket->forceFill([
+                'scanned_at' => now(),
+                'scanned_by' => $dataSource,
+            ])->save();
         }
 
         return $this->scanPayload($ticket->group_zero ? 'OK_GROUP_ZERO' : 'OK', $ticket->first_name);
@@ -56,7 +60,7 @@ class GoldenTicketScanVerifier
     /**
      * @return array{status: string, first_name: ?string, message: string}
      */
-    public function scanSerialNumber(string $serialNumber): array
+    public function scanSerialNumber(string $serialNumber, ?string $dataSource = null): array
     {
         $ticket = Ticket::query()
             ->where('ps_year', DateHelpers::psYearForDate(now()))
@@ -71,12 +75,16 @@ class GoldenTicketScanVerifier
             return $this->scanPayload('REVOKED', $ticket->first_name);
         }
 
-        if ($ticket->scanned_at !== null && $ticket->scanned_at->lt(now()->subMinutes(2))) {
+        if ($ticket->scanned_at !== null && $ticket->scanned_at->lt(now()->subSeconds(30))) {
             return $this->scanPayload('ALREADY_SCANNED', $ticket->first_name);
         }
 
         if ($ticket->scanned_at === null) {
-            $ticket->forceFill(['scanned_at' => now()])->save();
+            $dataSource = $dataSource ?? 'Mobile QR Scanning';
+            $ticket->forceFill([
+                'scanned_at' => now(),
+                'scanned_by' => $dataSource,
+            ])->save();
         }
 
         return $this->scanPayload($ticket->group_zero ? 'OK_GROUP_ZERO' : 'OK', $ticket->first_name);
@@ -86,8 +94,9 @@ class GoldenTicketScanVerifier
      * @param  array<int, string>  $qrCodes
      * @return array{results: array<int, array{line: int, qr_code: string, status: string, first_name: ?string, message: string}>, summary: array{total: int, success: int, invalid: int, revoked: int, already_scanned: int, duplicate_in_import: int, counts: array<string, int>}}
      */
-    public function scanMany(array $qrCodes): array
+    public function scanMany(array $qrCodes, ?string $dataSource = null): array
     {
+        $dataSource = $dataSource ?? 'Mobile QR Scanning';
         $results = [];
         $counts = [];
         $processedSerials = [];
@@ -113,7 +122,7 @@ class GoldenTicketScanVerifier
             }
 
             // Process the scan normally
-            $result = $this->scan($qrCode);
+            $result = $this->scan($qrCode, $dataSource);
             $status = $result['status'];
             $counts[$status] = ($counts[$status] ?? 0) + 1;
 
