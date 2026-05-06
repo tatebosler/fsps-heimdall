@@ -26,15 +26,15 @@ class GoldenTicketPdfGenerator
 
     private const QR_X = 240;
 
-    private const QR_Y = 462;
+    private const QR_Y = 477;
 
     private const QR_SIZE = 132;
 
-    private const PRIORITY_BANNER_Y = 444;
+    private const PRIORITY_BANNER_Y = 459;
 
-    private const SERIAL_NUMBER_Y = 592;
+    private const SERIAL_NUMBER_Y = 607;
 
-    private const VOLUNTEER_NAME_Y = 616;
+    private const VOLUNTEER_NAME_Y = 631;
 
     public static function filename(Ticket $ticket): string
     {
