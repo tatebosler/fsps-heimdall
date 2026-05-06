@@ -77,3 +77,13 @@ test('coordinator channel broadcast page renders when tools are unlocked', funct
         ->assertSee('Coordinator Channel Broadcast')
         ->assertSee('Send Broadcast');
 });
+
+test('message field uses live binding for character counter updates', function () {
+    config()->set('ps.admin_tools_password', 'shared-secret');
+
+    $this->withSession([
+        AdminToolsAuth::SESSION_KEY => true,
+    ])->get('/admin/coordinator-channel-broadcast')
+        ->assertSuccessful()
+        ->assertSee('wire:model.live="message"', false);
+});

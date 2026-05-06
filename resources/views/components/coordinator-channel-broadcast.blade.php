@@ -82,7 +82,7 @@ new #[Layout('components.layouts.admin')] #[Title('Coordinator Channel Broadcast
             <label for="broadcast-message" class="mb-2 block text-sm font-semibold uppercase tracking-wide">Message (max 140 chars)</label>
             <textarea
                 id="broadcast-message"
-                wire:model="message"
+                wire:model.live="message"
                 rows="5"
                 maxlength="140"
                 spellcheck="true"
@@ -91,7 +91,7 @@ new #[Layout('components.layouts.admin')] #[Title('Coordinator Channel Broadcast
             ></textarea>
             <div class="mt-2 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
                 <span>SMS body length should stay short for readability.</span>
-                <span>{{ strlen($this->message) }}/140</span>
+                <span>{{ mb_strlen($this->message) }}/140</span>
             </div>
             @error('message')
                 <p class="mt-2 text-sm font-semibold text-red-600 dark:text-red-400">{{ $message }}</p>
