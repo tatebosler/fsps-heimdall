@@ -55,6 +55,19 @@
 
             <flux:sidebar.spacer class="my-2" />
 
+            <flux:sidebar.group heading="Coordinator Alerts">
+                <flux:sidebar.item href="/admin/coordinator-channel-registration" :current="request()->is('admin/coordinator-channel-registration')" wire:navigate>
+                    <span class="fas fa-users-gear"></span>
+                    Bulk Channel Registration
+                </flux:sidebar.item>
+                <flux:sidebar.item href="/admin/coordinator-channel-broadcast" :current="request()->is('admin/coordinator-channel-broadcast')" wire:navigate>
+                    <span class="fas fa-bullhorn"></span>
+                    Channel Broadcast
+                </flux:sidebar.item>
+            </flux:sidebar.group>
+
+            <flux:sidebar.spacer class="my-2" />
+
             <flux:sidebar.group heading="Golden Tickets" icon="ticket">
                 <flux:sidebar.item href="/admin/gtmanager" :current="request()->is('admin/gtmanager')">
                     <span class="fas fa-ticket"></span>

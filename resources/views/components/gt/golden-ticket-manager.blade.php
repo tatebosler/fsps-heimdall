@@ -821,9 +821,9 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                     <a href="{{ route('singleton-scanner') }}" wire:navigate @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-qrcode mr-2" aria-hidden="true"></span>Open Nadamoo live scanner
                     </a>
-                    <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                    <a href="{{ route('bulk-scan') }}" wire:navigate @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-cloud-arrow-up mr-2" aria-hidden="true"></span>Sync from offline scanners
-                    </button>
+                    </a>
 
                     <div class="my-1 border-t border-gray-200 dark:border-white/10"></div>
 

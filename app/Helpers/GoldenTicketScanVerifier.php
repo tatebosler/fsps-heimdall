@@ -102,8 +102,13 @@ class GoldenTicketScanVerifier
         $processedSerials = [];
 
         foreach (array_values($qrCodes) as $index => $qrCode) {
-            $ticketValue = $this->extractTicketValue($qrCode);
-            $serialNumber = $ticketValue !== null ? $this->decodeSerialNumber($ticketValue) : null;
+            $scanInput = trim($qrCode);
+            $isSerialInput = preg_match('/^\d{6}$/', $scanInput) === 1;
+
+            $ticketValue = $isSerialInput ? null : $this->extractTicketValue($scanInput);
+            $serialNumber = $isSerialInput
+                ? $scanInput
+                : ($ticketValue !== null ? $this->decodeSerialNumber($ticketValue) : null);
 
             // Check for duplicates within this import
             if ($serialNumber !== null && isset($processedSerials[$serialNumber])) {
@@ -122,7 +127,9 @@ class GoldenTicketScanVerifier
             }
 
             // Process the scan normally
-            $result = $this->scan($qrCode, $dataSource);
+            $result = $isSerialInput
+                ? $this->scanSerialNumber($scanInput, $dataSource)
+                : $this->scan($scanInput, $dataSource);
             $status = $result['status'];
             $counts[$status] = ($counts[$status] ?? 0) + 1;
 

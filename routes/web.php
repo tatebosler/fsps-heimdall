@@ -66,8 +66,11 @@ Route::prefix('admin')->group(function () {
         Route::livewire('/ntcodes', 'nt-codes')->name('ntcodes');
         Route::livewire('/historical', 'historical-data-viewer')->name('historical');
         Route::livewire('/entry-io', 'entry-data-io')->name('entry-data-io');
+        Route::livewire('/coordinator-channel-registration', 'coordinator-channel-registration')->name('coordinator-channel-registration');
+        Route::livewire('/coordinator-channel-broadcast', 'coordinator-channel-broadcast')->name('coordinator-channel-broadcast');
         Route::livewire('/editor', 'data-editor')->name('data-editor');
         Route::livewire('/singleton', 'singleton-scanner')->name('singleton-scanner');
+        Route::livewire('/bulk-scan', 'bulk-scanner')->name('bulk-scan');
         Route::livewire('/tower', 'tower')->name('tower');
         Route::livewire('/wb', 'wristband-booth')->name('wristband-booth');
         Route::get('/tickets/{ticket}/pdf', function (Ticket $ticket) {
