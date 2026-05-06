@@ -380,6 +380,8 @@ class GoldenTicketPdfGenerator
 
         $process = new Process([
             'convert',
+            '-density', '300',
+            '-quality', '95',
             $templatePdfPath.'[0]',
             $templatePngPath,
         ]);
@@ -408,6 +410,8 @@ class GoldenTicketPdfGenerator
 
         $process = new Process([
             'convert',
+            '-density', '300',
+            '-quality', '95',
             $templatePdfPath.'[0]',
             $templatePngPath,
         ]);
