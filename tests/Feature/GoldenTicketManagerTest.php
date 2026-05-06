@@ -124,3 +124,97 @@ test('delete ticket action requires confirmation and removes ticket after confir
 
     $this->assertModelMissing($ticket);
 });
+
+test('create ticket action sets working ticket to null and can create a new ticket', function () {
+    Livewire::test('gt.golden-ticket-manager')
+        ->call('openCreateTicketModal')
+        ->assertSet('workingTicket', null)
+        ->set('ticketFirstName', 'Ada')
+        ->set('ticketLastName', 'Lovelace')
+        ->set('ticketEmail', 'ada@example.com')
+        ->set('ticketPhone', '555-111-2222')
+        ->set('ticketZip', '10001')
+        ->set('ticketPriorityAdmission', true)
+        ->call('saveTicket');
+
+    $createdTicket = Ticket::query()->latest('id')->first();
+
+    expect($createdTicket)->not->toBeNull();
+    expect($createdTicket->first_name)->toBe('Ada');
+    expect($createdTicket->last_name)->toBe('Lovelace');
+    expect($createdTicket->email)->toBe('ada@example.com');
+    expect($createdTicket->phone)->toBe('555-111-2222');
+    expect($createdTicket->zip)->toBe('10001');
+    expect($createdTicket->group_zero)->toBeTrue();
+});
+
+test('edit ticket action sets working ticket and updates editable fields', function () {
+    $ticket = Ticket::factory()->create([
+        'first_name' => 'Old',
+        'last_name' => 'Name',
+        'email' => 'old@example.com',
+        'phone' => '555-0000',
+        'zip' => '60606',
+        'group_zero' => false,
+    ]);
+
+    Livewire::test('gt.golden-ticket-manager')
+        ->call('openEditTicketModal', $ticket->id)
+        ->assertSet('workingTicket.id', $ticket->id)
+        ->set('ticketFirstName', 'New')
+        ->set('ticketLastName', 'Person')
+        ->set('ticketEmail', 'new@example.com')
+        ->set('ticketPhone', '555-9999')
+        ->set('ticketZip', '73301')
+        ->set('ticketPriorityAdmission', true)
+        ->call('saveTicket')
+        ->assertSet('workingTicket', null);
+
+    $ticket->refresh();
+
+    expect($ticket->first_name)->toBe('New');
+    expect($ticket->last_name)->toBe('Person');
+    expect($ticket->email)->toBe('new@example.com');
+    expect($ticket->phone)->toBe('555-9999');
+    expect($ticket->zip)->toBe('73301');
+    expect($ticket->group_zero)->toBeTrue();
+});
+
+test('delete all tickets action only deletes tickets for the active year after confirmation', function () {
+    $activeYear = DateHelpers::psYearForDate(now());
+    $otherYear = $activeYear - 1;
+
+    Ticket::factory()->count(2)->create(['ps_year' => $activeYear]);
+    Ticket::factory()->count(1)->create(['ps_year' => $otherYear]);
+
+    Livewire::test('gt.golden-ticket-manager')
+        ->call('openDeleteAllTicketsModal')
+        ->assertSet('yearTicketPendingDeletionCount', 2)
+        ->call('deleteAllTicketsForSelectedYear');
+
+    expect(Ticket::query()->where('ps_year', $activeYear)->count())->toBe(0);
+    expect(Ticket::query()->where('ps_year', $otherYear)->count())->toBe(1);
+});
+
+test('download scan report action returns a csv download', function () {
+    $activeYear = DateHelpers::psYearForDate(now());
+    $calendarYear = DateHelpers::calendarYearForPsYear($activeYear);
+
+    Ticket::factory()->create([
+        'ps_year' => $activeYear,
+        'vlid' => null,
+        'serial' => '012345',
+        'first_name' => 'Pat',
+        'last_name' => 'Taylor',
+        'email' => 'pat@example.com',
+        'phone' => '555-222-3333',
+        'zip' => '12345',
+        'sent_at' => now()->subHour(),
+        'scanned_at' => now(),
+        'scanned_by' => 'GTManager',
+    ]);
+
+    Livewire::test('gt.golden-ticket-manager')
+        ->call('downloadScanReport')
+        ->assertFileDownloaded("golden-ticket-scan-report-{$calendarYear}.csv");
+});

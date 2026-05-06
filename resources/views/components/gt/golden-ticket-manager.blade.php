@@ -19,6 +19,22 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
 
     public ?string $ticketPendingDeletionSerial = null;
 
+    public ?int $yearTicketPendingDeletionCount = null;
+
+    public ?Ticket $workingTicket = null;
+
+    public ?string $ticketFirstName = null;
+
+    public ?string $ticketLastName = null;
+
+    public ?string $ticketEmail = null;
+
+    public ?string $ticketPhone = null;
+
+    public ?string $ticketZip = null;
+
+    public bool $ticketPriorityAdmission = false;
+
     public mixed $csv = null;
 
     /**
@@ -71,6 +87,7 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
     {
         $this->modal('import-tickets')->close();
         $this->modal('delete-ticket-confirmation')->close();
+        $this->modal('delete-all-tickets-confirmation')->close();
     }
 
     public function importCsv(VolunteerTicketCsvImporter $importer): void
@@ -222,6 +239,193 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
         $this->modal('import-tickets')->show();
     }
 
+    public function openDeleteAllTicketsModal(): void
+    {
+        $this->yearTicketPendingDeletionCount = Ticket::query()
+            ->where('ps_year', $this->selectedPsYear)
+            ->count();
+
+        $this->modal('delete-all-tickets-confirmation')->show();
+    }
+
+    public function cancelDeleteAllTickets(): void
+    {
+        $this->yearTicketPendingDeletionCount = null;
+        $this->modal('delete-all-tickets-confirmation')->close();
+    }
+
+    public function deleteAllTicketsForSelectedYear(): void
+    {
+        Ticket::query()
+            ->where('ps_year', $this->selectedPsYear)
+            ->delete();
+
+        $this->yearTicketPendingDeletionCount = null;
+        $this->modal('delete-all-tickets-confirmation')->close();
+
+        unset($this->tickets);
+    }
+
+    public function downloadScanReport(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $psYear = $this->selectedPsYear;
+        $calendarYear = DateHelpers::calendarYearForPsYear($psYear);
+        $fileName = "golden-ticket-scan-report-{$calendarYear}.csv";
+
+        return response()->streamDownload(function () use ($psYear): void {
+            $handle = fopen('php://output', 'wb');
+
+            if ($handle === false) {
+                throw new \RuntimeException('Unable to create scan report output stream.');
+            }
+
+            fputcsv($handle, [
+                'VLID',
+                'First name',
+                'Last name',
+                'Email address',
+                'Phone number',
+                'Zip code',
+                'Send timestamp',
+                'Scan timestamp',
+                'Scanned By',
+            ]);
+
+            Ticket::query()
+                ->where('ps_year', $psYear)
+                ->orderBy('id')
+                ->cursor()
+                ->each(function (Ticket $ticket) use ($handle): void {
+                    $vlid = is_string($ticket->vlid) && trim($ticket->vlid) !== ''
+                        ? $ticket->vlid
+                        : "anonymous-{$ticket->serial}";
+
+                    fputcsv($handle, [
+                        $vlid,
+                        $ticket->first_name ?? '',
+                        $ticket->last_name ?? '',
+                        $ticket->email ?? '',
+                        $ticket->phone ?? '',
+                        $ticket->zip ?? '',
+                        $ticket->sent_at?->toIso8601String() ?? '',
+                        $ticket->scanned_at?->toIso8601String() ?? '',
+                        $ticket->scanned_by ?? '',
+                    ]);
+                });
+
+            fclose($handle);
+        }, $fileName, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function openCreateTicketModal(): void
+    {
+        $this->workingTicket = null;
+
+        $this->ticketFirstName = null;
+        $this->ticketLastName = null;
+        $this->ticketEmail = null;
+        $this->ticketPhone = null;
+        $this->ticketZip = null;
+        $this->ticketPriorityAdmission = false;
+
+        $this->resetValidation();
+        $this->modal('create-edit-ticket')->show();
+    }
+
+    public function openEditTicketModal(int $ticketId): void
+    {
+        $ticket = Ticket::query()
+            ->whereKey($ticketId)
+            ->where('ps_year', $this->selectedPsYear)
+            ->first();
+
+        if (! $ticket) {
+            return;
+        }
+
+        $this->workingTicket = $ticket;
+        $this->ticketFirstName = $ticket->first_name;
+        $this->ticketLastName = $ticket->last_name;
+        $this->ticketEmail = $ticket->email;
+        $this->ticketPhone = $ticket->phone;
+        $this->ticketZip = $ticket->zip;
+        $this->ticketPriorityAdmission = (bool) $ticket->group_zero;
+
+        $this->resetValidation();
+        $this->modal('create-edit-ticket')->show();
+    }
+
+    public function saveTicket(): void
+    {
+        $validated = $this->validate([
+            'ticketFirstName' => ['nullable', 'string', 'max:255'],
+            'ticketLastName' => ['nullable', 'string', 'max:255'],
+            'ticketEmail' => ['nullable', 'email', 'max:255'],
+            'ticketPhone' => ['nullable', 'string', 'max:255'],
+            'ticketZip' => ['nullable', 'string', 'max:32'],
+            'ticketPriorityAdmission' => ['required', 'boolean'],
+        ]);
+
+        $ticket = null;
+
+        if ($this->workingTicket?->id) {
+            $ticket = Ticket::query()
+                ->whereKey($this->workingTicket->id)
+                ->where('ps_year', $this->selectedPsYear)
+                ->first();
+        }
+
+        if (! $ticket) {
+            $ticket = new Ticket;
+            $ticket->ps_year = $this->selectedPsYear;
+            $ticket->serial = $this->generateUniqueSerial($this->selectedPsYear, (bool) $validated['ticketPriorityAdmission']);
+        }
+
+        $ticket->first_name = $this->normalizeNullableString($validated['ticketFirstName']);
+        $ticket->last_name = $this->normalizeNullableString($validated['ticketLastName']);
+        $ticket->email = $this->normalizeNullableString($validated['ticketEmail']);
+        $ticket->phone = $this->normalizeNullableString($validated['ticketPhone']);
+        $ticket->zip = $this->normalizeNullableString($validated['ticketZip']);
+        $ticket->group_zero = (bool) $validated['ticketPriorityAdmission'];
+
+        $ticket->save();
+
+        $this->workingTicket = null;
+        $this->modal('create-edit-ticket')->close();
+
+        unset($this->tickets);
+    }
+
+    private function normalizeNullableString(mixed $value): ?string
+    {
+        $trimmed = trim((string) $value);
+
+        return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function generateUniqueSerial(int $psYear, bool $groupZero): string
+    {
+        for ($attempt = 0; $attempt < 50; $attempt++) {
+            $prefix = $groupZero ? '0' : (string) random_int(1, 9);
+            $middle = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+            $suffix = (string) random_int(0, 9);
+            $serial = $prefix.$middle.$suffix;
+
+            $exists = Ticket::query()
+                ->where('ps_year', $psYear)
+                ->where('serial', $serial)
+                ->exists();
+
+            if (! $exists) {
+                return $serial;
+            }
+        }
+
+        throw new \RuntimeException('Unable to generate a unique serial number for this PS year.');
+    }
+
     #[Computed]
     public function tickets(): \Illuminate\Support\Collection
     {
@@ -283,7 +487,7 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                     class="absolute right-0 z-50 mt-2 w-64 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 dark:bg-gray-800 dark:ring-white/10"
                     role="menu"
                 >
-                    <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                    <button type="button" wire:click="openCreateTicketModal" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-user-plus mr-2" aria-hidden="true"></span>Create single ticket
                     </button>
                     <button type="button" wire:click="openImportTicketsModal" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
@@ -322,13 +526,13 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
 
                     <div class="my-1 border-t border-gray-200 dark:border-white/10"></div>
 
-                    <button type="button" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                    <button type="button" wire:click="downloadScanReport" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                         <span class="fas fa-download mr-2" aria-hidden="true"></span>Download scan report
                     </button>
 
                     <div class="my-1 border-t border-gray-200 dark:border-white/10"></div>
 
-                    <button type="button" class="block w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30" role="menuitem">
+                    <button type="button" wire:click="openDeleteAllTicketsModal" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/30" role="menuitem">
                         <span class="fas fa-trash mr-2" aria-hidden="true"></span>Delete all tickets
                     </button>
                 </div>
@@ -521,6 +725,9 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
                                 class="absolute right-0 z-50 mt-2 w-52 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 dark:bg-gray-800 dark:ring-white/10"
                                 role="menu"
                             >
+                                <button type="button" wire:click="openEditTicketModal({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
+                                    <span class="fas fa-pen-to-square mr-2" aria-hidden="true"></span>Edit ticket
+                                </button>
                                 @if ($ticket->scanned_at)
                                     <button type="button" wire:click="undoTicketScan({{ $ticket->id }})" @click="open = false" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5" role="menuitem">
                                         <span class="fas fa-qrcode mr-2" aria-hidden="true"></span>Undo scan
@@ -550,6 +757,27 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
         </tbody>
     </table>
 
+    <flux:modal name="create-edit-ticket" flyout>
+        <h2>{{ $workingTicket ? 'Edit' : 'Create' }} Ticket</h2>
+        <form class="mt-4 space-y-4" wire:submit="saveTicket">
+            <flux:input wire:model="ticketFirstName" label="First name" />
+            <flux:input wire:model="ticketLastName" label="Last name" />
+            <flux:input wire:model="ticketEmail" type="email" label="Email" />
+            <flux:input wire:model="ticketPhone" label="Phone" />
+            <flux:input wire:model="ticketZip" label="Zip code" />
+            <flux:checkbox wire:model="ticketPriorityAdmission" label="Group Zero" />
+
+            @unless ($workingTicket)
+                <p class="text-sm">Heads up: creating a ticket does not automatically send it to this volunteer. You'll need to manually send the ticket when you're ready.</p>
+            @endunless
+
+            <div class="flex justify-end gap-2">
+                <flux:button type="button" variant="ghost" x-on:click="$flux.modal('create-edit-ticket').close()">Cancel</flux:button>
+                <flux:button type="submit" variant="primary">Save changes</flux:button>
+            </div>
+        </form>
+    </flux:modal>
+
     <flux:modal name="delete-ticket-confirmation">
         <div class="space-y-4">
             <h2>Delete Ticket</h2>
@@ -566,6 +794,26 @@ new #[Layout('components.layouts.admin')] #[Title('Golden Ticket Manager')] clas
             <div class="flex justify-end gap-2">
                 <flux:button wire:click="cancelDeleteTicket" variant="ghost">Cancel</flux:button>
                 <flux:button wire:click="deleteConfirmedTicket" variant="danger">Delete ticket</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    <flux:modal name="delete-all-tickets-confirmation">
+        <div class="space-y-4">
+            <h2>Delete All Tickets</h2>
+            <p>
+                Are you sure you want to delete all Golden Tickets for
+                <span class="font-semibold">{{ DateHelpers::calendarYearForPsYear($selectedPsYear) }}</span>?
+                @if ($yearTicketPendingDeletionCount !== null)
+                    This will delete <span class="font-semibold">{{ $yearTicketPendingDeletionCount }}</span>
+                    {{ \Illuminate\Support\Str::plural('ticket', $yearTicketPendingDeletionCount) }}.
+                @endif
+                This action cannot be undone.
+            </p>
+
+            <div class="flex justify-end gap-2">
+                <flux:button wire:click="cancelDeleteAllTickets" variant="ghost">Cancel</flux:button>
+                <flux:button wire:click="deleteAllTicketsForSelectedYear" variant="danger">Delete all tickets</flux:button>
             </div>
         </div>
     </flux:modal>
