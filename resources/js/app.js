@@ -123,6 +123,7 @@ async function verifyGoldenTicketQrCode(verifyUrl, qrCode) {
 function describeQrScanResult(payload) {
     const status = String(payload?.status ?? 'INVALID');
     const firstName = String(payload?.first_name ?? '').trim();
+    const message = String(payload?.message ?? '').trim();
 
     switch (status) {
         case 'OK':
@@ -154,7 +155,7 @@ function describeQrScanResult(payload) {
                 tone: 'error',
                 heading: 'ALREADY SCANNED',
                 name: firstName,
-                detail: '',
+                detail: message !== '' && message !== status ? message : '',
                 requiresAcknowledgement: false,
             };
         default:

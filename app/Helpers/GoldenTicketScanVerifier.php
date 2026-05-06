@@ -3,13 +3,14 @@
 namespace App\Helpers;
 
 use App\Models\Ticket;
+use Carbon\CarbonInterface;
 
 class GoldenTicketScanVerifier
 {
     /**
      * @return array{status: string, first_name: ?string, message: string}
      */
-    public function scan(string $qrCode, ?string $dataSource = null): array
+    public function scan(string $qrCode, ?string $dataSource = null, bool $honorDuplicateGracePeriod = true): array
     {
         $ticketValue = $this->extractTicketValue($qrCode);
 
@@ -42,8 +43,8 @@ class GoldenTicketScanVerifier
             return $this->scanPayload('REVOKED', $ticket->first_name);
         }
 
-        if ($ticket->scanned_at !== null && $ticket->scanned_at->lt(now()->subSeconds(30))) {
-            return $this->scanPayload('ALREADY_SCANNED', $ticket->first_name);
+        if ($this->shouldRejectAsDuplicate($ticket, $honorDuplicateGracePeriod)) {
+            return $this->scanPayload('ALREADY_SCANNED', $ticket->first_name, $ticket->scanned_at);
         }
 
         if ($ticket->scanned_at === null) {
@@ -60,7 +61,7 @@ class GoldenTicketScanVerifier
     /**
      * @return array{status: string, first_name: ?string, message: string}
      */
-    public function scanSerialNumber(string $serialNumber, ?string $dataSource = null): array
+    public function scanSerialNumber(string $serialNumber, ?string $dataSource = null, bool $honorDuplicateGracePeriod = true): array
     {
         $ticket = Ticket::query()
             ->where('ps_year', DateHelpers::psYearForDate(now()))
@@ -75,8 +76,8 @@ class GoldenTicketScanVerifier
             return $this->scanPayload('REVOKED', $ticket->first_name);
         }
 
-        if ($ticket->scanned_at !== null && $ticket->scanned_at->lt(now()->subSeconds(30))) {
-            return $this->scanPayload('ALREADY_SCANNED', $ticket->first_name);
+        if ($this->shouldRejectAsDuplicate($ticket, $honorDuplicateGracePeriod)) {
+            return $this->scanPayload('ALREADY_SCANNED', $ticket->first_name, $ticket->scanned_at);
         }
 
         if ($ticket->scanned_at === null) {
@@ -128,8 +129,8 @@ class GoldenTicketScanVerifier
 
             // Process the scan normally
             $result = $isSerialInput
-                ? $this->scanSerialNumber($scanInput, $dataSource)
-                : $this->scan($scanInput, $dataSource);
+                ? $this->scanSerialNumber($scanInput, $dataSource, false)
+                : $this->scan($scanInput, $dataSource, false);
             $status = $result['status'];
             $counts[$status] = ($counts[$status] ?? 0) + 1;
 
@@ -228,16 +229,31 @@ class GoldenTicketScanVerifier
             : null;
     }
 
+    protected function shouldRejectAsDuplicate(Ticket $ticket, bool $honorDuplicateGracePeriod): bool
+    {
+        if ($ticket->scanned_at === null) {
+            return false;
+        }
+
+        if (! $honorDuplicateGracePeriod) {
+            return true;
+        }
+
+        return ! $ticket->scanned_at->gt(now()->subSeconds(30));
+    }
+
     /**
      * @return array{status: string, first_name: ?string, message: string}
      */
-    protected function scanPayload(string $status, ?string $firstName = null): array
+    protected function scanPayload(string $status, ?string $firstName = null, ?CarbonInterface $scannedAt = null): array
     {
         $normalizedFirstName = blank($firstName) ? null : trim((string) $firstName);
 
-        $message = in_array($status, ['OK', 'OK_GROUP_ZERO'], true) && $normalizedFirstName !== null
-            ? $status.' '.$normalizedFirstName
-            : $status;
+        $message = match (true) {
+            in_array($status, ['OK', 'OK_GROUP_ZERO'], true) && $normalizedFirstName !== null => $status.' '.$normalizedFirstName,
+            $status === 'ALREADY_SCANNED' && $scannedAt !== null => 'Scanned on '.$scannedAt->format('M j, Y g:i:s A'),
+            default => $status,
+        };
 
         return [
             'status' => $status,
