@@ -38,6 +38,6 @@ class GroupCleared extends Notification implements ShouldQueue
     public function toVonage(object $notifiable): VonageMessage
     {
         $group = $this->channel->id % 100;
-        return (new VonageMessage)->content("Plant Sale: Group {$group} has been admitted! Please make your way to the sale entrance. Thank you for shopping with us!")->clientReference("clear_{$this->channel->id}");
+        return (new VonageMessage)->content("FSPS: Group {$group} has been admitted! Please make your way to the sale entrance. Thank you for shopping with us!")->clientReference("clear_{$this->channel->id}");
     }
 }
