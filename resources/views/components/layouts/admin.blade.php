@@ -31,16 +31,16 @@
 
         <flux:sidebar.nav>
             <flux:sidebar.group heading="Customer Entry" icon="arrow-right-end-on-rectangle">
-                <flux:sidebar.item href="/admin/wb" :current="request()->is('wb')">
+                <flux:sidebar.item href="/admin/wb" :current="request()->is('admin/wb')">
                     <span class="fas fa-store"></span>
                     Wristband Booth
                 </flux:sidebar.item>
-                <flux:sidebar.item href="/admin/tower" :current="request()->is('tower')">
+                <flux:sidebar.item href="/admin/tower" :current="request()->is('admin/tower')">
                     <span class="fas fa-tower-observation"></span>
                     Tower
                 </flux:sidebar.item>
                 <flux:sidebar.item href="/admin/editor" :current="request()->is('admin/editor')">
-                    <span class="fas fa-table-cells-large"></span>
+                    <span class="fas fa-pen-to-square"></span>
                     Manual Data Editor
                 </flux:sidebar.item>
                 <flux:sidebar.item href="/admin/historical" :current="request()->is('admin/historical')">

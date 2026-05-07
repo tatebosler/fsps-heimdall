@@ -18,6 +18,7 @@ new #[Layout('components.layouts.admin')] #[Title('Tower Dashboard')] class exte
     public ?int $lastCleared = 0;
     public ?int $lastNotified = 0;
     public ?Carbon $lastClearedAt = null;
+    public ?string $nextGroupEstimatedClearTime = null;
 
     public function mount()
     {
@@ -54,6 +55,13 @@ new #[Layout('components.layouts.admin')] #[Title('Tower Dashboard')] class exte
         } else {
             $this->nextGroup = -2;
             Cache::forget('entry-clearing');
+        }
+
+        if ($this->nextGroup >= 0) {
+            $estimate = EntryTimeEstimator::getEstimate($this->nextGroup);
+            $this->nextGroupEstimatedClearTime = $estimate->format('g:i a').' ('.$estimate->diffForHumans().')';
+        } else {
+            $this->nextGroupEstimatedClearTime = null;
         }
     }
 
@@ -175,7 +183,12 @@ new #[Layout('components.layouts.admin')] #[Title('Tower Dashboard')] class exte
         @endif
         @if ($lastClearedAt !== null and $nextGroup > -3)
             <div class="mx-4 py-2 px-3 bg-gray-200 dark:bg-gray-800 rounded-b text-center max-sm:text-xs" wire:poll>
-                <p>Group {{ $lastCleared }} cleared {{ $lastClearedAt->diffForHumans() }}</p>
+                <p>
+                    Group {{ $lastCleared }} cleared {{ $lastClearedAt->diffForHumans() }}
+                    @if ($nextGroupEstimatedClearTime)
+                        | Group {{ $nextGroup }} estimated clear time {{ $nextGroupEstimatedClearTime }}
+                    @endif
+                </p>
             </div>
         @elseif ($nextGroup === -3 and $lastClearedAt !== null)
             <div class="mx-4 py-2 px-3 bg-gray-200 dark:bg-gray-800 rounded-b text-center max-sm:text-xs" wire:poll>
