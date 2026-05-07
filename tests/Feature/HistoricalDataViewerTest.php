@@ -53,9 +53,13 @@ test('historical data viewer shows off bands times from 9x0 channels', function 
         'cleared_at' => '2026-05-07 07:05:00',
     ])->save();
 
+    $users = User::factory()->count(11)->create();
+    $offBandChannel->subscribers()->attach($users->pluck('id'));
+
     Livewire::test('historical-data-viewer')
         ->assertSee('Off Bands Times')
         ->assertSee((string) $offBandChannelId)
+        ->assertSee('11')
         ->assertSee('Thursday')
         ->assertSee('2026-05-07 07:05:00');
 });

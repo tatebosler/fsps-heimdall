@@ -64,6 +64,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
             ])
             ->whereRaw('FLOOR(MOD(id, 1000) / 100) = 9')
             ->whereRaw('MOD(id, 10) = 0')
+            ->withCount('subscribers')
             ->orderBy('id')
             ->get()
             ->map(function (Channel $channel): array {
@@ -72,6 +73,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
 
                 return [
                     'id' => $channel->id,
+                    'subscribers_count' => $channel->subscribers_count,
                     'day_name' => DateHelpers::dayNumberToString($dayNumber),
                     'date_label' => $date->isoFormat('dddd, MMMM D, YYYY'),
                     'cleared_at' => $channel->cleared_at,
@@ -346,6 +348,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
             <thead class="bg-zinc-50 dark:bg-zinc-800">
                 <tr>
                     <th class="px-3 py-2 text-left font-semibold">Channel ID</th>
+                    <th class="px-3 py-2 text-left font-semibold">Subscribers</th>
                     <th class="px-3 py-2 text-left font-semibold">Day</th>
                     <th class="px-3 py-2 text-left font-semibold">Date</th>
                     <th class="px-3 py-2 text-left font-semibold">Cleared At</th>
@@ -355,13 +358,14 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
                 @forelse ($this->offBandChannels() as $offBandChannel)
                     <tr wire:key="off-band-row-{{ $offBandChannel['id'] }}">
                         <td class="px-3 py-2">{{ $offBandChannel['id'] }}</td>
+                        <td class="px-3 py-2">{{ $offBandChannel['subscribers_count'] }}</td>
                         <td class="px-3 py-2">{{ $offBandChannel['day_name'] }}</td>
                         <td class="px-3 py-2">{{ $offBandChannel['date_label'] }}</td>
                         <td class="px-3 py-2">{{ $this->formatTimestamp($offBandChannel['cleared_at']) }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-3 py-4 text-center text-zinc-500">No off bands channels found for {{ $selectedCalendarYear }}.</td>
+                        <td colspan="5" class="px-3 py-4 text-center text-zinc-500">No off bands channels found for {{ $selectedCalendarYear }}.</td>
                     </tr>
                 @endforelse
             </tbody>

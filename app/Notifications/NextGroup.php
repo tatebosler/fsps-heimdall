@@ -37,7 +37,9 @@ class NextGroup extends Notification implements ShouldQueue
      */
     public function toVonage(object $notifiable): VonageMessage
     {
-        $group = $this->channel->id % 100;
-        return (new VonageMessage)->content("FSPS: It's almost your turn to shop - group {$group} is next to be admitted! Please make your way to the sale entrance. Thank you for shopping with us!")->clientReference("next_{$this->channel->id}");
+        $next_channel_id = $this->channel->id + 1;
+        $group = $next_channel_id % 100;
+
+        return (new VonageMessage)->content("FSPS: It's almost your turn to shop - group {$group} is next to be admitted! Please make your way to the sale entrance. Thank you for shopping with us!")->clientReference("next_{$next_channel_id}");
     }
 }
