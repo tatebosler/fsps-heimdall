@@ -207,6 +207,7 @@ function updateQrScannerUi(root, options = {}) {
     const feedbackHeading = root.querySelector('[data-qr-feedback-heading]');
     const feedbackName = root.querySelector('[data-qr-feedback-name]');
     const feedbackDetail = root.querySelector('[data-qr-feedback-detail]');
+    const startButton = root.querySelector('[data-qr-start-button]');
     const acknowledgeButton = root.querySelector('[data-qr-acknowledge]');
 
     root.dataset.scanning = scanning ? 'true' : 'false';
@@ -245,6 +246,13 @@ function updateQrScannerUi(root, options = {}) {
         feedbackDetail.textContent = detail;
         feedbackDetail.classList.toggle('hidden', detail === '');
     }
+
+    if (startButton) {
+        const canStartFromBanner = !scanning;
+        startButton.disabled = !canStartFromBanner;
+        startButton.setAttribute('aria-disabled', canStartFromBanner ? 'false' : 'true');
+        startButton.setAttribute('title', canStartFromBanner ? 'Start scanner' : 'Scanner active');
+    }
 }
 
 function destroyQrScanner(root) {
@@ -256,6 +264,7 @@ function destroyQrScanner(root) {
 
     instance.toggleButton.removeEventListener('click', instance.handleToggle);
     instance.activateSfxButton?.removeEventListener('click', instance.handleActivateSfx);
+    instance.startButton?.removeEventListener('click', instance.handleStartFromBanner);
     instance.scanner.destroy();
     qrScannerInstances.delete(root);
 }
@@ -268,6 +277,7 @@ function initQrScanner(root) {
     const video = root.querySelector('[data-qr-video]');
     const toggleButton = root.querySelector('[data-qr-toggle]');
     const activateSfxButton = root.querySelector('[data-qr-activate-sfx]');
+    const startButton = root.querySelector('[data-qr-start-button]');
     const acknowledgeButton = root.querySelector('[data-qr-acknowledge]');
 
     if (!video || !toggleButton) {
@@ -470,8 +480,17 @@ function initQrScanner(root) {
         }
     };
 
+    const handleStartFromBanner = async () => {
+        if (root.dataset.scanning === 'true') {
+            return;
+        }
+
+        await handleToggle();
+    };
+
     toggleButton.addEventListener('click', handleToggle);
     activateSfxButton?.addEventListener('click', handleActivateSfx);
+    startButton?.addEventListener('click', handleStartFromBanner);
 
     qrScannerInstances.set(root, {
         scanner,
@@ -479,6 +498,8 @@ function initQrScanner(root) {
         handleToggle,
         activateSfxButton,
         handleActivateSfx,
+        startButton,
+        handleStartFromBanner,
     });
 
     updateQrScannerUi(root, {

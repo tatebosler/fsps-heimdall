@@ -42,10 +42,15 @@ new #[Layout('components.layouts.app')] #[Title('QR Code Scanner')] class extend
             ></video>
         </div>
 
-        <div data-qr-feedback-panel class="rounded-3xl border border-white/40 bg-white/80 px-6 py-8 text-center text-gray-950 shadow-2xl backdrop-blur-sm">
+        <button
+            type="button"
+            data-qr-start-button
+            data-qr-feedback-panel
+            class="w-full rounded-3xl border border-white/40 bg-white/80 px-6 py-8 text-center text-gray-950 shadow-2xl backdrop-blur-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-90"
+        >
             <p data-qr-feedback-heading class="text-4xl font-black tracking-[0.2em] sm:text-6xl">READY</p>
             <p data-qr-feedback-name class="mt-3 hidden text-2xl font-semibold sm:text-4xl"></p>
             <p data-qr-feedback-detail class="mt-3 hidden text-sm text-gray-800 sm:text-base"></p>
-        </div>
+        </button>
     </div>
 </div>
