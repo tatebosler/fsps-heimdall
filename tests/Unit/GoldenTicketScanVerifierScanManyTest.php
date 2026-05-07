@@ -9,6 +9,8 @@ afterEach(function () {
 });
 
 test('scanMany accepts serial input and flags duplicates in a single import', function () {
+    Carbon::setTestNow(Carbon::create(2026, 5, 6, 12, 0, 0));
+
     $ticket = Ticket::factory()->create([
         'serial' => '654321',
         'first_name' => 'Mara',
@@ -37,6 +39,18 @@ test('scanMany accepts serial input and flags duplicates in a single import', fu
 
     expect($ticket->scanned_at)->not->toBeNull();
     expect($ticket->scanned_by)->toBe('Bulk Test');
+
+    $this->assertDatabaseCount('scan_logs', 2);
+    $this->assertDatabaseHas('scan_logs', [
+        'ticket_id' => $ticket->id,
+        'result' => 'OK',
+        'scanned_at' => now()->toDateTimeString(),
+    ]);
+    $this->assertDatabaseHas('scan_logs', [
+        'ticket_id' => $ticket->id,
+        'result' => 'DUPLICATE_IN_IMPORT',
+        'scanned_at' => now()->toDateTimeString(),
+    ]);
 });
 
 test('scanMany bypasses the live scan grace period for previously scanned tickets', function () {

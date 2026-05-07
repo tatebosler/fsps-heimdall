@@ -8,6 +8,7 @@ use Database\Factories\TicketFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['ps_year', 'first_name', 'last_name', 'email', 'phone', 'zip', 'shifts', 'group_zero', 'serial'])]
 class Ticket extends Model
@@ -33,6 +34,11 @@ class Ticket extends Model
         'scanned_at' => 'datetime',
         'revoked_at' => 'datetime',
     ];
+
+    public function scanLogs(): HasMany
+    {
+        return $this->hasMany(ScanLog::class);
+    }
 
     public function getCalendarYear(): int
     {

@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\Models\ScanLog;
 use App\Models\Ticket;
 use Carbon\CarbonInterface;
 
@@ -30,32 +31,13 @@ class GoldenTicketScanVerifier
             return $this->scanPayload('INVALID');
         }
 
-        $ticket = Ticket::query()
-            ->where('ps_year', DateHelpers::psYearForDate(now()))
-            ->where('serial', $serialNumber)
-            ->first();
+        $ticket = $this->findTicketBySerial($serialNumber);
 
         if ($ticket === null) {
             return $this->scanPayload('INVALID');
         }
 
-        if ($ticket->revoked_at !== null) {
-            return $this->scanPayload('REVOKED', $ticket->first_name);
-        }
-
-        if ($this->shouldRejectAsDuplicate($ticket, $honorDuplicateGracePeriod)) {
-            return $this->scanPayload('ALREADY_SCANNED', $ticket->first_name, $ticket->scanned_at);
-        }
-
-        if ($ticket->scanned_at === null) {
-            $dataSource = $dataSource ?? 'Mobile QR Scanning';
-            $ticket->forceFill([
-                'scanned_at' => now(),
-                'scanned_by' => $dataSource,
-            ])->save();
-        }
-
-        return $this->scanPayload($ticket->group_zero ? 'OK_GROUP_ZERO' : 'OK', $ticket->first_name);
+        return $this->scanTicket($ticket, $dataSource, $honorDuplicateGracePeriod);
     }
 
     /**
@@ -63,32 +45,13 @@ class GoldenTicketScanVerifier
      */
     public function scanSerialNumber(string $serialNumber, ?string $dataSource = null, bool $honorDuplicateGracePeriod = true): array
     {
-        $ticket = Ticket::query()
-            ->where('ps_year', DateHelpers::psYearForDate(now()))
-            ->where('serial', $serialNumber)
-            ->first();
+        $ticket = $this->findTicketBySerial($serialNumber);
 
         if ($ticket === null) {
             return $this->scanPayload('INVALID');
         }
 
-        if ($ticket->revoked_at !== null) {
-            return $this->scanPayload('REVOKED', $ticket->first_name);
-        }
-
-        if ($this->shouldRejectAsDuplicate($ticket, $honorDuplicateGracePeriod)) {
-            return $this->scanPayload('ALREADY_SCANNED', $ticket->first_name, $ticket->scanned_at);
-        }
-
-        if ($ticket->scanned_at === null) {
-            $dataSource = $dataSource ?? 'Mobile QR Scanning';
-            $ticket->forceFill([
-                'scanned_at' => now(),
-                'scanned_by' => $dataSource,
-            ])->save();
-        }
-
-        return $this->scanPayload($ticket->group_zero ? 'OK_GROUP_ZERO' : 'OK', $ticket->first_name);
+        return $this->scanTicket($ticket, $dataSource, $honorDuplicateGracePeriod);
     }
 
     /**
@@ -116,6 +79,13 @@ class GoldenTicketScanVerifier
                 $status = 'DUPLICATE_IN_IMPORT';
                 $firstName = null;
                 $result = $this->scanPayload($status, $firstName);
+
+                $ticket = $this->findTicketBySerial($serialNumber);
+
+                if ($ticket !== null) {
+                    $this->recordScanLog($ticket, $status);
+                }
+
                 $counts[$status] = ($counts[$status] ?? 0) + 1;
 
                 $results[] = [
@@ -158,6 +128,56 @@ class GoldenTicketScanVerifier
                 'counts' => $counts,
             ],
         ];
+    }
+
+    protected function findTicketBySerial(string $serialNumber): ?Ticket
+    {
+        return Ticket::query()
+            ->where('ps_year', DateHelpers::psYearForDate(now()))
+            ->where('serial', $serialNumber)
+            ->first();
+    }
+
+    /**
+     * @return array{status: string, first_name: ?string, message: string}
+     */
+    protected function scanTicket(Ticket $ticket, ?string $dataSource, bool $honorDuplicateGracePeriod): array
+    {
+        if ($ticket->revoked_at !== null) {
+            $result = $this->scanPayload('REVOKED', $ticket->first_name);
+            $this->recordScanLog($ticket, $result['status']);
+
+            return $result;
+        }
+
+        if ($this->shouldRejectAsDuplicate($ticket, $honorDuplicateGracePeriod)) {
+            $result = $this->scanPayload('ALREADY_SCANNED', $ticket->first_name, $ticket->scanned_at);
+            $this->recordScanLog($ticket, $result['status']);
+
+            return $result;
+        }
+
+        if ($ticket->scanned_at === null) {
+            $dataSource = $dataSource ?? 'Mobile QR Scanning';
+            $ticket->forceFill([
+                'scanned_at' => now(),
+                'scanned_by' => $dataSource,
+            ])->save();
+        }
+
+        $result = $this->scanPayload($ticket->group_zero ? 'OK_GROUP_ZERO' : 'OK', $ticket->first_name);
+        $this->recordScanLog($ticket, $result['status']);
+
+        return $result;
+    }
+
+    protected function recordScanLog(Ticket $ticket, string $status): void
+    {
+        ScanLog::query()->create([
+            'ticket_id' => $ticket->id,
+            'scanned_at' => now(),
+            'result' => $status,
+        ]);
     }
 
     protected function extractTicketValue(string $qrCode): ?string

@@ -16,6 +16,8 @@ test('scan endpoint accepts test ticket on apex host', function () {
             'first_name' => 'Test',
             'message' => 'OK Test',
         ]);
+
+    $this->assertDatabaseCount('scan_logs', 0);
 });
 
 test('scan endpoint accepts test ticket on www host', function () {
@@ -30,6 +32,8 @@ test('scan endpoint accepts test ticket on www host', function () {
 });
 
 test('scan endpoint accepts serial input and stamps provided scan source', function () {
+    Carbon::setTestNow(Carbon::create(2026, 5, 6, 12, 0, 0));
+
     $ticket = Ticket::factory()->create([
         'serial' => '123456',
         'first_name' => 'Nadia',
@@ -51,6 +55,12 @@ test('scan endpoint accepts serial input and stamps provided scan source', funct
 
     expect($ticket->scanned_at)->not->toBeNull();
     expect($ticket->scanned_by)->toBe('Nadamoo Live Scanner');
+
+    $this->assertDatabaseHas('scan_logs', [
+        'ticket_id' => $ticket->id,
+        'result' => 'OK',
+        'scanned_at' => now()->toDateTimeString(),
+    ]);
 });
 
 test('scan endpoint stamps provided scan source for full qr payloads', function () {
@@ -112,7 +122,7 @@ test('scan endpoint rejects rescans at 30 seconds and returns when the ticket wa
 
     $scannedAt = now()->subSeconds(30);
 
-    Ticket::factory()->create([
+    $ticket = Ticket::factory()->create([
         'serial' => '444444',
         'first_name' => 'Nadia',
         'scanned_at' => $scannedAt,
@@ -128,4 +138,49 @@ test('scan endpoint rejects rescans at 30 seconds and returns when the ticket wa
             'first_name' => 'Nadia',
             'message' => 'Scanned on May 6, 2026 11:59:30 AM',
         ]);
+
+    $this->assertDatabaseHas('scan_logs', [
+        'ticket_id' => $ticket->id,
+        'result' => 'ALREADY_SCANNED',
+        'scanned_at' => now()->toDateTimeString(),
+    ]);
+});
+
+test('scan endpoint logs revoked scans', function () {
+    Carbon::setTestNow(Carbon::create(2026, 5, 6, 12, 0, 0));
+
+    $ticket = Ticket::factory()->create([
+        'serial' => '555555',
+        'first_name' => 'Mara',
+        'revoked_at' => now()->subDay(),
+    ]);
+
+    $this->postJson('/golden-tickets/scan', [
+        'qr_code' => '555555',
+        'data_source' => 'Nadamoo Live Scanner',
+    ])->assertOk()
+        ->assertJson([
+            'status' => 'REVOKED',
+            'first_name' => 'Mara',
+            'message' => 'REVOKED',
+        ]);
+
+    $this->assertDatabaseHas('scan_logs', [
+        'ticket_id' => $ticket->id,
+        'result' => 'REVOKED',
+        'scanned_at' => now()->toDateTimeString(),
+    ]);
+});
+
+test('scan endpoint does not log invalid scans', function () {
+    $this->postJson('/golden-tickets/scan', [
+        'qr_code' => 'not-a-ticket',
+    ])->assertOk()
+        ->assertJson([
+            'status' => 'INVALID',
+            'first_name' => null,
+            'message' => 'INVALID',
+        ]);
+
+    $this->assertDatabaseCount('scan_logs', 0);
 });
