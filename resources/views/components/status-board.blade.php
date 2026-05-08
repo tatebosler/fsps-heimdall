@@ -36,8 +36,13 @@ new class extends Component
         } else if ($this->includeFutureGroups) {
             $futureChannels = EntryTimeEstimator::getHypotheticalEstimates($weekday);
             foreach ($futureChannels as $data) {
+                $channelId = $data['group'] + ($psYear * 1000) + ($weekday * 100);
+                if ($channels->contains(fn (Channel $existingChannel) => $existingChannel->id === $channelId)) {
+                    continue;
+                }
+
                 $ch = new Channel();
-                $ch->id = $data['group'] + ($psYear * 1000) + ($weekday * 100);
+                $ch->id = $channelId;
                 $ch->estimated_entry_at = $data['estimated_entry_at'];
                 $channels->push($ch);
             }

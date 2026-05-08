@@ -12,22 +12,29 @@ class EntryTimeEstimator
 {
     public static function estimateEntryTimes(): void
     {
-        $psYear = DateHelpers::psYearForDate(now());
-        $weekday = date('N');
-        $channels = Channel::whereLike('id', "{$psYear}{$weekday}__")->orderBy('id', 'asc')->get();
+        $currentDate = now();
+        $psYear = DateHelpers::psYearForDate($currentDate);
+        $weekday = $currentDate->dayOfWeekIso;
+        $weekdayName = $currentDate->dayName;
+        $calendarYear = $currentDate->year;
+        $channels = Channel::whereLike('id', "{$psYear}{$weekday}__")
+            ->whereNotNull('distribution_started_at')
+            ->orderBy('id', 'asc')
+            ->get();
         [$pendingChannels, $clearedChannels] = $channels->partition(fn ($channel) => $channel->cleared_at === null);
 
-        $clearRate = 60 * (config('ps.historical_clear_rates')[date('l')] ?? 7.5);
+        $clearRate = 60 * (config('ps.historical_clear_rates')[$weekdayName] ?? 7.5);
         if ($clearedChannels->count() >= 6) {
             $clearRateSample = $clearedChannels->take(-6)->pluck('cleared_at');
             $lastCleared = null;
             $clearRateSampleData = [];
             foreach ($clearRateSample as $clearedAt) {
-                if (!$lastCleared) {
+                if (! $lastCleared) {
                     $lastCleared = $clearedAt;
+
                     continue;
                 }
-                $clearRateSampleData[] = $clearedAt->diffInSeconds($lastCleared);
+                $clearRateSampleData[] = $clearedAt->diffInSeconds($lastCleared, true);
                 $lastCleared = $clearedAt;
             }
             $clearRate = round(collect($clearRateSampleData)->avg());
@@ -35,14 +42,14 @@ class EntryTimeEstimator
 
         $lastCleared = $clearedChannels->last()?->cleared_at;
         if (! $lastCleared) {
-            if (array_key_exists(date('l'), config('ps.hours'))) {
-                $lastCleared = DateHelpers::psDayForCalendarYear(date('Y'), date('N'))->setTimeFromTimeString(config('ps.hours.'.date('l').'.open'));
+            if (array_key_exists($weekdayName, config('ps.hours'))) {
+                $lastCleared = DateHelpers::psDayForCalendarYear($calendarYear, $weekday)->setTimeFromTimeString(config('ps.hours.'.$weekdayName.'.open'));
             } else {
                 $lastCleared = Carbon::now();
                 $lastCleared->setTime(9, 0, 0);
             }
         }
-        $firstGroupOfToday = (int) !array_key_exists(date('l'), config('ps.group_zero'));
+        $firstGroupOfToday = (int) ! array_key_exists($weekdayName, config('ps.group_zero'));
         foreach ($pendingChannels as $channel) {
             if ($channel->id % 100 === $firstGroupOfToday) {
                 $estimatedEntryAt = $lastCleared->copy();
@@ -60,7 +67,7 @@ class EntryTimeEstimator
             if ($lastGoodEstimate) {
                 if ($lastGoodEstimate->estimated_entry_at->diffInSeconds($estimatedEntryAt, true) < 1) {
                     continue;
-                } else if ($lastGoodEstimate->estimated_entry_at->diffInMinutes($estimatedEntryAt, true) > 30) {
+                } elseif ($lastGoodEstimate->estimated_entry_at->diffInMinutes($estimatedEntryAt, true) > 30) {
                     Log::info("Significant time change for channel {$channel->id}: was {$lastGoodEstimate->estimated_entry_at}, now {$estimatedEntryAt}");
                 }
             }
@@ -89,11 +96,12 @@ class EntryTimeEstimator
             $lastCleared = null;
             $clearRateSampleData = [];
             foreach ($clearRateSample as $clearedAt) {
-                if (!$lastCleared) {
+                if (! $lastCleared) {
                     $lastCleared = $clearedAt;
+
                     continue;
                 }
-                $clearRateSampleData[] = $clearedAt->diffInSeconds($lastCleared);
+                $clearRateSampleData[] = $clearedAt->diffInSeconds($lastCleared, true);
                 $lastCleared = $clearedAt;
             }
             $clearRate = round(collect($clearRateSampleData)->avg());
@@ -105,7 +113,7 @@ class EntryTimeEstimator
             $lastClearedGroup = $lastClearedChannel->id % 100;
         } else {
             $lastCleared = DateHelpers::psDayForCalendarYear(date('Y'), date('N'))->setTimeFromTimeString(config('ps.hours.'.date('l').'.open'));
-            $lastClearedGroup = (int) !array_key_exists(date('l'), config('ps.group_zero'));
+            $lastClearedGroup = (int) ! array_key_exists(date('l'), config('ps.group_zero'));
         }
 
         return $lastCleared->copy()->addSeconds($clearRate * ($group - $lastClearedGroup));
@@ -125,11 +133,12 @@ class EntryTimeEstimator
             $lastCleared = null;
             $clearRateSampleData = [];
             foreach ($clearRateSample as $clearedAt) {
-                if (!$lastCleared) {
+                if (! $lastCleared) {
                     $lastCleared = $clearedAt;
+
                     continue;
                 }
-                $clearRateSampleData[] = $clearedAt->diffInSeconds($lastCleared);
+                $clearRateSampleData[] = $clearedAt->diffInSeconds($lastCleared, true);
                 $lastCleared = $clearedAt;
             }
             $clearRate = round(collect($clearRateSampleData)->avg());
@@ -141,11 +150,11 @@ class EntryTimeEstimator
             $lastCleared = $lastClearedChannel->cleared_at;
             $lastClearedGroup = $lastClearedChannel->id % 100;
             $startGroup = $lastClearedGroup + 1;
-        } else if (!array_key_exists($weekday, config('ps.hours'))) {
+        } elseif (! array_key_exists($weekday, config('ps.hours'))) {
             return [];
         } else {
             $lastCleared = DateHelpers::psDayForCalendarYear(date('Y'), $day)->setTimeFromTimeString(config('ps.hours.'.$weekday.'.open'));
-            $lastClearedGroup = (int) !array_key_exists($weekday, config('ps.group_zero'));
+            $lastClearedGroup = (int) ! array_key_exists($weekday, config('ps.group_zero'));
             if ($lastPendingChannel) {
                 $startGroup = ($lastPendingChannel->id % 100) + 1;
             } else {
@@ -155,7 +164,7 @@ class EntryTimeEstimator
 
         $returnTimes = [];
 
-        if ($startGroup === (int) !array_key_exists($weekday, config('ps.group_zero'))) {
+        if ($startGroup === (int) ! array_key_exists($weekday, config('ps.group_zero'))) {
             $returnTimes[] = [
                 'group' => $startGroup,
                 'estimated_entry_at' => $lastCleared->copy(),
@@ -171,6 +180,7 @@ class EntryTimeEstimator
                 'estimated_entry_at' => $lastCleared->copy()->addSeconds($clearRate * ($group - $lastClearedGroup)),
             ];
         }
+
         return $returnTimes;
     }
 }

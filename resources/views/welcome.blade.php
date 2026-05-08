@@ -68,7 +68,7 @@
                 <li>Wristbands are void if removed or tampered with.</li>
                 <li>In the interest of fairness, we do not allow customers to reserve entry times before arrival. (We promise, we've looked into this quite extensively.)</li>
             </ul>
-            <div class="bg-yellow-200 text-yellow-950 dark:bg-yellow-800 dark:text-yellow-50 rounded-xl border-yellow-400 dark:border-yellow-600 border-2 p-4 flex items-start gap-3">
+            {{-- <div class="bg-yellow-200 text-yellow-950 dark:bg-yellow-800 dark:text-yellow-50 rounded-xl border-yellow-400 dark:border-yellow-600 border-2 p-4 flex items-start gap-3">
                 <div class="fas fa-exclamation-triangle text-xl mt-1.5"></div>
                 <div class="space-y-2">
                     <p class="text-lg sm:text-xl"><strong>Heads up to volunteers shopping at the Thursday pre-sale</strong></p>
@@ -78,7 +78,7 @@
                     <p>Duplicated tickets are subject to denial of admission or other disciplinary action.</p>
                     <p>Yellow Tag holders: please proceed directly to the entry gate (or the wristband distribution point in eithe raccessible lot) and present your physical credential for admission. You do not need a wristband.</p>
                 </div>
-            </div>
+            </div> --}}
         </div>
     </div>
 </x-layouts.app>
