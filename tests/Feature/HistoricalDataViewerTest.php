@@ -63,3 +63,26 @@ test('historical data viewer shows off bands times from 9x0 channels', function 
         ->assertSee('Thursday')
         ->assertSee('2026-05-07 07:05:00');
 });
+
+test('historical data viewer time-between graphs use group transition labels', function () {
+    $psYear = DateHelpers::psYearForDate(now());
+
+    $channelOne = Channel::create(['id' => sprintf('%d401', $psYear)]);
+    $channelTwo = Channel::create(['id' => sprintf('%d402', $psYear)]);
+
+    $channelOne->forceFill([
+        'distribution_started_at' => '2026-05-07 09:00:00',
+        'cleared_at' => '2026-05-07 09:15:00',
+    ])->save();
+
+    $channelTwo->forceFill([
+        'distribution_started_at' => '2026-05-07 09:05:00',
+        'cleared_at' => '2026-05-07 09:25:00',
+    ])->save();
+
+    $component = Livewire::test('historical-data-viewer')->instance();
+    $dayGraphs = $component->graphsByDay()->first();
+
+    expect($dayGraphs['time_between_clearance']['series'][0]['x_label'])->toBe('1 -> 2');
+    expect($dayGraphs['time_between_distribution']['series'][0]['x_label'])->toBe('1 -> 2');
+});

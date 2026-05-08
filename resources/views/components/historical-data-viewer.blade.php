@@ -155,6 +155,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
 
                 return [
                     'group' => (int) ($channel->id % 100),
+                    'x_label' => (string) ((int) ($channel->id % 100)),
                     'value' => $seconds,
                     'value_min' => round($seconds / 60, 2),
                 ];
@@ -165,6 +166,9 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
         return [
             'series' => $rows->all(),
             'stats' => $this->calculateStats($rows->pluck('value')),
+            'x_field' => 'group',
+            'tooltip_heading_field' => 'group',
+            'tick_count' => 10,
         ];
     }
 
@@ -180,6 +184,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
 
                 return [
                     'group' => (int) ($channel->id % 100),
+                    'x_label' => (string) ((int) ($channel->id % 100)),
                     'value' => $seconds,
                     'value_min' => round($seconds / 60, 2),
                 ];
@@ -190,6 +195,9 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
         return [
             'series' => $rows->all(),
             'stats' => $this->calculateStats($rows->pluck('value')),
+            'x_field' => 'group',
+            'tooltip_heading_field' => 'group',
+            'tick_count' => 10,
         ];
     }
 
@@ -212,9 +220,12 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
             }
 
             $seconds = $previousTimestamp->diffInSeconds($currentTimestamp, false);
+            $previousGroup = (int) ($previousChannel->id % 100);
+            $currentGroup = (int) ($currentChannel->id % 100);
 
             $rows->push([
-                'group' => (int) ($currentChannel->id % 100),
+                'group' => $currentGroup,
+                'x_label' => sprintf('%d -> %d', $previousGroup, $currentGroup),
                 'value' => $seconds,
                 'value_min' => round($seconds / 60, 2),
             ]);
@@ -223,7 +234,23 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
         return [
             'series' => $rows->values()->all(),
             'stats' => $this->calculateStats($rows->pluck('value')),
+            'x_field' => 'x_label',
+            'tooltip_heading_field' => 'x_label',
+            'tick_count' => $this->transitionTickCount($rows->count()),
         ];
+    }
+
+    private function transitionTickCount(int $pointCount): int
+    {
+        if ($pointCount <= 6) {
+            return max(2, $pointCount);
+        }
+
+        if ($pointCount <= 12) {
+            return 6;
+        }
+
+        return 5;
     }
 
     private function calculateStats(Collection $values): array
@@ -394,7 +421,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
                             @if (count($graph['series']) >= 2)
                                 <flux:chart :value="$graph['series']" class="h-64 rounded-lg border border-zinc-200 dark:border-zinc-700">
                                     <flux:chart.svg>
-                                        <flux:chart.axis axis="x" field="group" tick-count="10">
+                                        <flux:chart.axis axis="x" :field="$graph['x_field']" :tick-count="$graph['tick_count']">
                                             <flux:chart.axis.line />
                                             <flux:chart.axis.tick />
                                         </flux:chart.axis>
@@ -410,7 +437,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
                                     </flux:chart.svg>
 
                                     <flux:chart.tooltip>
-                                        <flux:chart.tooltip.heading field="group" />
+                                        <flux:chart.tooltip.heading :field="$graph['tooltip_heading_field']" />
                                         <flux:chart.tooltip.value field="value_min" label="Value" suffix=" min" />
                                     </flux:chart.tooltip>
                                 </flux:chart>
