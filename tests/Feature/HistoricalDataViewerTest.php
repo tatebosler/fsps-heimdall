@@ -103,6 +103,6 @@ test('historical data viewer time-between graphs use group transition labels', f
     $component = Livewire::test('historical-data-viewer')->instance();
     $dayGraphs = $component->graphsByDay()->first();
 
-    expect($dayGraphs['time_between_clearance']['series'][0]['x_label'])->toBe('1 -> 2');
-    expect($dayGraphs['time_between_distribution']['series'][0]['x_label'])->toBe('1 -> 2');
+    expect($dayGraphs['time_between_clearance']['series'][0]['x_label'])->toBe('1 → 2');
+    expect($dayGraphs['time_between_distribution']['series'][0]['x_label'])->toBe('1 → 2');
 });

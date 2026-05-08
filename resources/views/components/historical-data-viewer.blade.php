@@ -225,7 +225,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
 
             $rows->push([
                 'group' => $currentGroup,
-                'x_label' => sprintf('%d -> %d', $previousGroup, $currentGroup),
+                'x_label' => sprintf('%d → %d', $previousGroup, $currentGroup),
                 'value' => $seconds,
                 'value_min' => round($seconds / 60, 2),
             ]);
