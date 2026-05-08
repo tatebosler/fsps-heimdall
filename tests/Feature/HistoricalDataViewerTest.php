@@ -44,6 +44,26 @@ test('historical data viewer shows subscriber count and duration metrics', funct
         ->assertSee('0:30:00');
 });
 
+test('historical data viewer shows graph subtitles for estimate error and max wait time', function () {
+    $psYear = DateHelpers::psYearForDate(now());
+    $channelId = sprintf('%d401', $psYear);
+
+    $channel = Channel::create(['id' => $channelId]);
+    $channel->forceFill([
+        'customers_arrived_at' => '2026-05-07 09:30:00',
+        'distribution_started_at' => '2026-05-07 09:45:00',
+        'estimated_entry_at' => '2026-05-07 10:05:00',
+        'original_estimated_entry_at' => '2026-05-07 10:00:00',
+        'cleared_at' => '2026-05-07 10:15:00',
+    ])->save();
+
+    User::factory()->count(2)->create()->each(fn ($user) => $channel->subscribers()->attach($user->id));
+
+    Livewire::test('historical-data-viewer')
+        ->assertSee('Negative times = group was cleared earlier than original estimate. Closer to zero is better.')
+        ->assertSee('Measures the maximum wait time within each group, using customer arrival or distribution start time. Lower is better.');
+});
+
 test('historical data viewer shows off bands times from 9x0 channels', function () {
     $psYear = DateHelpers::psYearForDate(now());
     $offBandChannelId = sprintf('%d940', $psYear);

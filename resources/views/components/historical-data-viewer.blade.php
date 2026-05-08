@@ -411,12 +411,24 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
                         'Time Between Group Clearance' => $day['time_between_clearance'],
                         'Time Between Group Distribution' => $day['time_between_distribution'],
                     ];
+
+                    $graphSubtitles = [
+                        'Estimate Error' => 'Negative times = group was cleared earlier than original estimate. Closer to zero is better.',
+                        'Max Wait Time' => 'Measures the maximum wait time within each group, using customer arrival or distribution start time. Lower is better.',
+                        'Time Between Group Clearance' => 'Flatter lines are better.',
+                    ];
                 @endphp
 
                 <div class="grid gap-6 lg:grid-cols-2">
                     @foreach ($graphs as $title => $graph)
                         <div wire:key="{{ str($title)->slug() }}-{{ $day['day_number'] }}" class="space-y-3">
                             <h3 class="font-medium">{{ $title }}</h3>
+
+                            @if (isset($graphSubtitles[$title]))
+                                <p class="text-sm text-zinc-500 dark:text-zinc-400">
+                                    {{ $graphSubtitles[$title] }}
+                                </p>
+                            @endif
 
                             @if (count($graph['series']) >= 2)
                                 <flux:chart :value="$graph['series']" class="h-64 rounded-lg border border-zinc-200 dark:border-zinc-700">
