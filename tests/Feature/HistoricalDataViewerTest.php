@@ -41,7 +41,38 @@ test('historical data viewer shows subscriber count and duration metrics', funct
         ->assertSee('2')
         ->assertSee('2026-05-07')
         ->assertSee('0:15:00')
-        ->assertSee('0:30:00');
+        ->assertSee('0:45:00');
+});
+
+test('historical data viewer shows minimum wait time graph values', function () {
+    $psYear = DateHelpers::psYearForDate(now());
+
+    $channelZero = Channel::create(['id' => sprintf('%d400', $psYear)]);
+    $channelOne = Channel::create(['id' => sprintf('%d401', $psYear)]);
+    $channelTwo = Channel::create(['id' => sprintf('%d402', $psYear)]);
+
+    $channelZero->forceFill([
+        'cleared_at' => '2026-05-07 09:00:00',
+    ])->save();
+
+    $channelOne->forceFill([
+        'distribution_started_at' => '2026-05-07 09:10:00',
+        'cleared_at' => '2026-05-07 09:30:00',
+    ])->save();
+
+    $channelTwo->forceFill([
+        'distribution_started_at' => '2026-05-07 09:35:00',
+        'cleared_at' => '2026-05-07 09:50:00',
+    ])->save();
+
+    $graph = Livewire::test('historical-data-viewer')
+        ->instance()
+        ->graphsByDay()
+        ->first()['minimum_wait_time'];
+
+    expect($graph['series'][0])->toMatchArray(['group' => 0, 'value' => 0]);
+    expect($graph['series'][1])->toMatchArray(['group' => 1, 'value' => 300]);
+    expect($graph['series'][2])->toMatchArray(['group' => 2, 'value' => 0]);
 });
 
 test('historical data viewer shows graph subtitles for estimate error and max wait time', function () {

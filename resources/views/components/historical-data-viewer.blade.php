@@ -98,6 +98,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
                     'color' => config('ps.colors')[$dayName] ?? 'zinc',
                     'estimate_error' => $this->buildEstimateErrorGraph($channels),
                     'max_wait_time' => $this->buildMaxWaitTimeGraph($channels),
+                    'minimum_wait_time' => $this->buildMinimumWaitTimeGraph($channels),
                     'time_between_clearance' => $this->buildConsecutiveDiffGraph($channels, 'cleared_at'),
                     'time_between_distribution' => $this->buildConsecutiveDiffGraph($channels, 'distribution_started_at'),
                 ];
@@ -116,11 +117,18 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
 
     public function maxWaitTimeSeconds(Channel $channel): ?int
     {
-        if (! $channel->distribution_started_at || ! $channel->cleared_at) {
+        $start = $this->waitStartTimestamp($channel);
+
+        if (! $start || ! $channel->cleared_at) {
             return null;
         }
 
-        return $channel->distribution_started_at->diffInSeconds($channel->cleared_at, false);
+        return $start->diffInSeconds($channel->cleared_at, false);
+    }
+
+    public function waitStartTimestamp(Channel $channel): ?\Illuminate\Support\Carbon
+    {
+        return $channel->customers_arrived_at ?? $channel->distribution_started_at;
     }
 
     public function formatTimestamp(mixed $timestamp): string
@@ -194,6 +202,43 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
 
         return [
             'series' => $rows->all(),
+            'stats' => $this->calculateStats($rows->pluck('value')),
+            'x_field' => 'group',
+            'tooltip_heading_field' => 'group',
+            'tick_count' => 10,
+        ];
+    }
+
+    private function buildMinimumWaitTimeGraph(Collection $channels): array
+    {
+        $ordered = $channels->sortBy('id')->values();
+        $rows = collect();
+        $lastIndex = $ordered->count() - 1;
+
+        foreach ($ordered as $index => $currentChannel) {
+            $group = (int) ($currentChannel->id % 100);
+            $seconds = null;
+
+            if ($group === 0 || $index === $lastIndex) {
+                $seconds = 0;
+            } elseif ($currentChannel->cleared_at && $ordered[$index + 1]->distribution_started_at) {
+                $seconds = $currentChannel->cleared_at->diffInSeconds($ordered[$index + 1]->distribution_started_at, false);
+            }
+
+            if ($seconds === null) {
+                continue;
+            }
+
+            $rows->push([
+                'group' => $group,
+                'x_label' => (string) $group,
+                'value' => $seconds,
+                'value_min' => round($seconds / 60, 2),
+            ]);
+        }
+
+        return [
+            'series' => $rows->values()->all(),
             'stats' => $this->calculateStats($rows->pluck('value')),
             'x_field' => 'group',
             'tooltip_heading_field' => 'group',
@@ -408,6 +453,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
                     $graphs = [
                         'Estimate Error' => $day['estimate_error'],
                         'Max Wait Time' => $day['max_wait_time'],
+                        'Minimum Wait' => $day['minimum_wait_time'],
                         'Time Between Group Clearance' => $day['time_between_clearance'],
                         'Time Between Group Distribution' => $day['time_between_distribution'],
                     ];
@@ -415,6 +461,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
                     $graphSubtitles = [
                         'Estimate Error' => 'Negative times = group was cleared earlier than original estimate. Closer to zero is better.',
                         'Max Wait Time' => 'Measures the maximum wait time within each group, using customer arrival or distribution start time. Lower is better.',
+                        'Minimum Wait' => 'Time from current group clear to next group distribution start. Group Zero and the last group are always 0.',
                         'Time Between Group Clearance' => 'Flatter lines are better.',
                     ];
                 @endphp
