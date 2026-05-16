@@ -98,6 +98,7 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
                     'color' => config('ps.colors')[$dayName] ?? 'zinc',
                     'estimate_error' => $this->buildEstimateErrorGraph($channels),
                     'max_wait_time' => $this->buildMaxWaitTimeGraph($channels),
+                    'minimum_wait_time' => $this->buildMinimumWaitTimeGraph($channels),
                     'time_between_clearance' => $this->buildConsecutiveDiffGraph($channels, 'cleared_at'),
                     'time_between_distribution' => $this->buildConsecutiveDiffGraph($channels, 'distribution_started_at'),
                 ];
@@ -181,36 +182,58 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
 
     private function buildMaxWaitTimeGraph(Collection $channels): array
     {
+        $rows = $channels
+            ->map(function (Channel $channel): ?array {
+                $seconds = $this->maxWaitTimeSeconds($channel);
+
+                if ($seconds === null) {
+                    return null;
+                }
+
+                return [
+                    'group' => (int) ($channel->id % 100),
+                    'x_label' => (string) ((int) ($channel->id % 100)),
+                    'value' => $seconds,
+                    'value_min' => round($seconds / 60, 2),
+                ];
+            })
+            ->filter()
+            ->values();
+
+        return [
+            'series' => $rows->all(),
+            'stats' => $this->calculateStats($rows->pluck('value')),
+            'x_field' => 'group',
+            'tooltip_heading_field' => 'group',
+            'tick_count' => 10,
+        ];
+    }
+
+    private function buildMinimumWaitTimeGraph(Collection $channels): array
+    {
         $ordered = $channels->sortBy('id')->values();
         $rows = collect();
         $lastIndex = $ordered->count() - 1;
 
-        foreach ($ordered as $index => $channel) {
-            $maxWaitSeconds = $this->maxWaitTimeSeconds($channel);
-
-            if ($maxWaitSeconds === null) {
-                continue;
-            }
-
-            $minimumWaitSeconds = null;
-            $group = (int) ($channel->id % 100);
+        foreach ($ordered as $index => $currentChannel) {
+            $group = (int) ($currentChannel->id % 100);
+            $seconds = null;
 
             if ($group === 0 || $index === $lastIndex) {
-                $minimumWaitSeconds = 0;
-            } elseif ($channel->cleared_at && $ordered[$index + 1]->distribution_started_at) {
-                $minimumWaitSeconds = max(0, $channel->cleared_at->diffInSeconds($ordered[$index + 1]->distribution_started_at, false));
+                $seconds = 0;
+            } elseif ($currentChannel->cleared_at && $ordered[$index + 1]->distribution_started_at) {
+                $seconds = max(0, $currentChannel->cleared_at->diffInSeconds($ordered[$index + 1]->distribution_started_at, false));
             }
 
-            if ($minimumWaitSeconds === null) {
+            if ($seconds === null) {
                 continue;
             }
 
             $rows->push([
                 'group' => $group,
                 'x_label' => (string) $group,
-                'value' => $maxWaitSeconds,
-                'max_wait_min' => round($maxWaitSeconds / 60, 2),
-                'minimum_wait_min' => round($minimumWaitSeconds / 60, 2),
+                'value' => $seconds,
+                'value_min' => round($seconds / 60, 2),
             ]);
         }
 
@@ -429,14 +452,16 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
                 @php
                     $graphs = [
                         'Estimate Error' => $day['estimate_error'],
-                        'Max + Minimum Wait Time' => $day['max_wait_time'],
+                        'Max Wait Time' => $day['max_wait_time'],
+                        'Minimum Wait' => $day['minimum_wait_time'],
                         'Time Between Group Clearance' => $day['time_between_clearance'],
                         'Time Between Group Distribution' => $day['time_between_distribution'],
                     ];
 
                     $graphSubtitles = [
                         'Estimate Error' => 'Negative times = group was cleared earlier than original estimate. Closer to zero is better.',
-                        'Max + Minimum Wait Time' => 'Shows the maximum wait in each group plus the minimum wait before the next group starts. Group Zero and last group minimum wait are always 0.',
+                        'Max Wait Time' => 'Measures the maximum wait time within each group, using customer arrival or distribution start time. Lower is better.',
+                        'Minimum Wait' => 'Time from current group clear to next group distribution start. Group Zero and the last group are always 0.',
                         'Time Between Group Clearance' => 'Flatter lines are better.',
                     ];
                 @endphp
@@ -465,17 +490,14 @@ new #[Layout('components.layouts.admin')] #[Title('Historical Data Viewer')] cla
                                             <flux:chart.axis.tick />
                                         </flux:chart.axis>
 
-                                        <flux:chart.line field="max_wait_min" class="text-{{ $day['color'] }}-500" />
-                                        <flux:chart.point field="max_wait_min" class="text-{{ $day['color'] }}-600" />
-                                        <flux:chart.line field="minimum_wait_min" class="text-zinc-400" />
-                                        <flux:chart.point field="minimum_wait_min" class="text-zinc-500" />
+                                        <flux:chart.line field="value_min" class="text-{{ $day['color'] }}-500" />
+                                        <flux:chart.point field="value_min" class="text-{{ $day['color'] }}-600" />
                                         <flux:chart.cursor />
                                     </flux:chart.svg>
 
                                     <flux:chart.tooltip>
                                         <flux:chart.tooltip.heading :field="$graph['tooltip_heading_field']" />
-                                        <flux:chart.tooltip.value field="max_wait_min" label="Max wait" suffix=" min" />
-                                        <flux:chart.tooltip.value field="minimum_wait_min" label="Min wait" suffix=" min" />
+                                        <flux:chart.tooltip.value field="value_min" label="Value" suffix=" min" />
                                     </flux:chart.tooltip>
                                 </flux:chart>
                             @else

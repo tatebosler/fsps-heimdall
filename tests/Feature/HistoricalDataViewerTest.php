@@ -44,7 +44,7 @@ test('historical data viewer shows subscriber count and duration metrics', funct
         ->assertSee('0:45:00');
 });
 
-test('historical data viewer shows minimum wait time on the max wait graph', function () {
+test('historical data viewer shows minimum wait time graph values', function () {
     $psYear = DateHelpers::psYearForDate(now());
 
     $channelZero = Channel::create(['id' => sprintf('%d400', $psYear)]);
@@ -53,7 +53,6 @@ test('historical data viewer shows minimum wait time on the max wait graph', fun
 
     $channelZero->forceFill([
         'cleared_at' => '2026-05-07 09:00:00',
-        'distribution_started_at' => '2026-05-07 08:50:00',
     ])->save();
 
     $channelOne->forceFill([
@@ -69,11 +68,11 @@ test('historical data viewer shows minimum wait time on the max wait graph', fun
     $graph = Livewire::test('historical-data-viewer')
         ->instance()
         ->graphsByDay()
-        ->first()['max_wait_time'];
+        ->first()['minimum_wait_time'];
 
-    expect($graph['series'][0])->toMatchArray(['group' => 0, 'max_wait_min' => 10.0, 'minimum_wait_min' => 0.0]);
-    expect($graph['series'][1])->toMatchArray(['group' => 1, 'minimum_wait_min' => 5.0]);
-    expect($graph['series'][2])->toMatchArray(['group' => 2, 'minimum_wait_min' => 0.0]);
+    expect($graph['series'][0])->toMatchArray(['group' => 0, 'value' => 0]);
+    expect($graph['series'][1])->toMatchArray(['group' => 1, 'value' => 300]);
+    expect($graph['series'][2])->toMatchArray(['group' => 2, 'value' => 0]);
 });
 
 test('historical data viewer shows graph subtitles for estimate error and max wait time', function () {
@@ -93,7 +92,8 @@ test('historical data viewer shows graph subtitles for estimate error and max wa
 
     Livewire::test('historical-data-viewer')
         ->assertSee('Negative times = group was cleared earlier than original estimate. Closer to zero is better.')
-        ->assertSee('Shows the maximum wait in each group plus the minimum wait before the next group starts. Group Zero and last group minimum wait are always 0.');
+        ->assertSee('Measures the maximum wait time within each group, using customer arrival or distribution start time. Lower is better.')
+        ->assertSee('Time from current group clear to next group distribution start. Group Zero and the last group are always 0.');
 });
 
 test('historical data viewer shows off bands times from 9x0 channels', function () {
